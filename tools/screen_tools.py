@@ -1,5 +1,8 @@
-"""
-Screen tools — screenshot + GPT-4o mini vision for actual screen understanding.
+"""Screen reading tools with AI vision for J.A.R.V.I.S.
+
+Provides screen capture and GPT-4o mini vision analysis to understand
+what is currently visible on the screen, answer questions about it,
+and extract information from the UI.
 """
 
 import base64
@@ -15,7 +18,11 @@ SCREENSHOTS_DIR = Path("screenshots")
 
 
 def _capture_b64() -> tuple[str, int, int]:
-    """Take screenshot and return (base64_png, width, height)."""
+    """Take screenshot and return (base64_png, width, height).
+    
+    Returns:
+        Tuple of (base64_encoded_png, width_px, height_px)
+    """
     from PIL import ImageGrab
     img = ImageGrab.grab()
     buf = io.BytesIO()
@@ -25,7 +32,16 @@ def _capture_b64() -> tuple[str, int, int]:
 
 
 def _vision_describe(b64_png: str, question: str, api_key: str) -> str:
-    """Send screenshot to GPT-4o mini vision and return description."""
+    """Send screenshot to GPT-4o mini vision and return description.
+    
+    Args:
+        b64_png: Base64-encoded PNG image data
+        question: Question or prompt to ask about the image
+        api_key: OpenAI API key
+        
+    Returns:
+        Text description/answer from vision model
+    """
     import httpx
     resp = httpx.post(
         "https://api.openai.com/v1/chat/completions",
@@ -51,18 +67,32 @@ def _vision_describe(b64_png: str, question: str, api_key: str) -> str:
 
 
 def read_screen_tool():
+    """Create a tool for reading and understanding screen content via AI vision.
+    
+    Uses GPT-4o mini vision to analyze screenshots and answer questions
+    about what is visible on the screen.
+    
+    Returns:
+        Fury tool object for screen reading
+    """
     def read_screen(question: str = "Describe everything visible on the screen in detail. Include all text, UI elements, open applications, and what the user is currently doing."):
-        """Capture screen and use GPT-4o mini vision to understand it."""
+        """Capture the screen and use AI vision to understand and describe it.
+        
+        Args:
+            question: Question or prompt to ask about the screen content.
+                     Defaults to full screen description if not provided.
+            
+        Returns:
+            Dict with success status, description from vision model, screen size, and saved path
+        """
         try:
             api_key = os.getenv("OPENAI_API_KEY", "")
             b64, w, h = _capture_b64()
-
             # Save a copy for reference
             SCREENSHOTS_DIR.mkdir(exist_ok=True)
             img_path = SCREENSHOTS_DIR / f"screen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
             img_bytes = base64.b64decode(b64)
             img_path.write_bytes(img_bytes)
-
             description = _vision_describe(b64, question, api_key)
             return {
                 "success": True,

@@ -1,3 +1,9 @@
+"""Screenshot capture tools for J.A.R.V.I.S.
+
+Provides screenshot capture with optional AI vision analysis.
+Screenshots are saved to the screenshots/ directory.
+"""
+
 import os
 import base64
 import io
@@ -9,7 +15,24 @@ SCREENSHOTS_DIR = Path("screenshots")
 
 
 def screenshot_tool():
+    """Create a tool for capturing screenshots.
+    
+    Supports saving screenshots to disk and optionally analyzing them
+    with vision AI to describe what's on the screen.
+    
+    Returns:
+        Fury tool object for taking screenshots
+    """
     def take_screenshot(filename: str = "", analyze: bool = False):
+        """Capture a screenshot and optionally analyze it with AI vision.
+        
+        Args:
+            filename: Optional custom filename (without path). Auto-generated if not provided
+            analyze: If True, use GPT-4o-mini vision to describe the screenshot
+            
+        Returns:
+            Dict with success status, file path, size, and optional description
+        """
         try:
             from PIL import ImageGrab
             SCREENSHOTS_DIR.mkdir(exist_ok=True)
@@ -19,13 +42,11 @@ def screenshot_tool():
             path = SCREENSHOTS_DIR / name
             img = ImageGrab.grab()
             img.save(str(path))
-
             result = {
                 "success": True,
                 "path": str(path),
                 "size": f"{img.width}x{img.height}",
             }
-
             # Optionally analyze with vision
             if analyze:
                 try:
@@ -54,7 +75,6 @@ def screenshot_tool():
                     result["description"] = resp.json()["choices"][0]["message"]["content"]
                 except Exception as e:
                     result["vision_error"] = str(e)
-
             return result
         except ImportError:
             return {"error": "Pillow not installed — run: pip install Pillow"}
