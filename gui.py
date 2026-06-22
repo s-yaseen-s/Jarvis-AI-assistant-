@@ -34,7 +34,20 @@ FONT_TITLE = ("Consolas", 24, "bold")
 # ── Reusable holographic container ──────────────────────────────────────────
 
 def holo_frame(parent, title="", pad=8, **kw):
-    """Return (outer, inner) — outer has a 1-px cyan border, inner is the usable area."""
+    """Create a holographic container with cyan border and title.
+    
+    Returns a tuple of (outer_frame, inner_frame) where outer has the border
+    and title, and inner is the usable content area.
+    
+    Args:
+        parent: Parent tkinter widget
+        title: Optional title text for the frame header
+        pad: Padding inside the frame (default: 8)
+        **kw: Additional keyword arguments passed to outer frame
+        
+    Returns:
+        Tuple of (outer_frame, inner_frame)
+    """
     outer = tk.Frame(parent, bg=BORDER, **kw)
     if title:
         tk.Label(outer, text=f" {title} ", font=FONT_SM,
@@ -48,9 +61,20 @@ def holo_frame(parent, title="", pad=8, **kw):
 # ── Arc reactor ─────────────────────────────────────────────────────────────
 
 class ArcReactor(tk.Canvas):
-    """Animated concentric-ring reactor graphic."""
+    """Animated concentric-ring reactor graphic.
+    
+    Displays a continuously rotating multi-ring reactor with glowing core,
+    mimicking the arc reactor from Iron Man.
+    """
 
     def __init__(self, parent, size=188, **kw):
+        """Initialize the arc reactor animation.
+        
+        Args:
+            parent: Parent tkinter widget
+            size: Size of the reactor in pixels (default: 188)
+            **kw: Additional keyword arguments passed to Canvas
+        """
         super().__init__(parent, width=size, height=size,
                          bg=BG_PANEL, highlightthickness=0, **kw)
         self.s  = size
@@ -62,6 +86,7 @@ class ArcReactor(tk.Canvas):
         self._tick()
 
     def _tick(self):
+        """Update and redraw the reactor animation frame."""
         self.delete("all")
         cx, cy, s = self.cx, self.cy, self.s
         pulse = (math.sin(self.ph) + 1) / 2  # 0 → 1
@@ -123,9 +148,21 @@ class ArcReactor(tk.Canvas):
 # ── Audio waveform ───────────────────────────────────────────────────────────
 
 class Waveform(tk.Canvas):
-    """Animated equaliser-bar waveform."""
+    """Animated equaliser-bar waveform.
+    
+    Displays a dynamic audio waveform visualization with multiple frequency
+    components. Active state shows responsive animation; idle shows gentle pulse.
+    """
 
     def __init__(self, parent, width=214, height=52, **kw):
+        """Initialize the waveform animation canvas.
+        
+        Args:
+            parent: Parent tkinter widget
+            width: Canvas width in pixels (default: 214)
+            height: Canvas height in pixels (default: 52)
+            **kw: Additional keyword arguments passed to Canvas
+        """
         super().__init__(parent, width=width, height=height,
                          bg=BG_PANEL, highlightthickness=0, **kw)
         self.w      = width
@@ -135,9 +172,15 @@ class Waveform(tk.Canvas):
         self._tick()
 
     def set_active(self, val: bool):
+        """Set waveform to active (animated) or idle state.
+        
+        Args:
+            val: True for active animation, False for idle
+        """
         self.active = val
 
     def _tick(self):
+        """Update and redraw the waveform animation frame."""
         self.delete("all")
         n  = 44
         bw = self.w / n
@@ -160,9 +203,20 @@ class Waveform(tk.Canvas):
 # ── Progress bar ─────────────────────────────────────────────────────────────
 
 class HoloBar(tk.Frame):
-    """A labelled horizontal progress bar."""
+    """A labelled horizontal progress bar.
+    
+    Displays system metrics (CPU, RAM, disk) with color-coded progress
+    and percentage values. Colors change dynamically based on threshold.
+    """
 
     def __init__(self, parent, label="", **kw):
+        """Initialize a holographic progress bar.
+        
+        Args:
+            parent: Parent tkinter widget
+            label: Label text for the metric (e.g., 'CPU', 'RAM')
+            **kw: Additional keyword arguments passed to Frame
+        """
         super().__init__(parent, bg=BG_PANEL, **kw)
         tk.Label(self, text=f"{label:<5}", font=FONT_SM,
                  fg=TEXT_DIM, bg=BG_PANEL, width=5, anchor="w"
@@ -178,6 +232,13 @@ class HoloBar(tk.Frame):
         self._pct.pack(side="left")
 
     def set(self, val: float):
+        """Update the progress bar to a specific percentage.
+        
+        Changes color based on value: green (<60%), orange (60-85%), red (>85%).
+        
+        Args:
+            val: Percentage value (0-100)
+        """
         self.update_idletasks()
         w = self._track.winfo_width()
         fw = max(1, int(w * val / 100))
@@ -190,10 +251,22 @@ class HoloBar(tk.Frame):
 # ── Main UI class ────────────────────────────────────────────────────────────
 
 class JarvisUI:
+    """Main UI controller for J.A.R.V.I.S. desktop interface.
+    
+    Manages the holographic display, conversation log, input/output,
+    and real-time system stats. Communicates with backend via queues.
+    """
 
     def __init__(self, root: tk.Tk,
                  iq: queue.Queue,   # GUI → backend
                  oq: queue.Queue):  # backend → GUI
+        """Initialize the JARVIS UI.
+        
+        Args:
+            root: Main tkinter window
+            iq: Input queue (GUI → backend)
+            oq: Output queue (backend → GUI)
+        """
         self.root = root
         self.iq   = iq
         self.oq   = oq
@@ -208,6 +281,7 @@ class JarvisUI:
     # ── Window setup ────────────────────────────────────────────
 
     def _setup_window(self):
+        """Configure main window properties and grid layout."""
         r = self.root
         r.title("J.A.R.V.I.S.")
         r.configure(bg=BG)
@@ -219,6 +293,7 @@ class JarvisUI:
     # ── Header ──────────────────────────────────────────────────
 
     def _build_header(self):
+        """Build the top header with title, status indicator, and clock."""
         hdr = tk.Frame(self.root, bg="#000d20", height=54)
         hdr.grid(row=0, column=0, sticky="ew")
         hdr.grid_propagate(False)
@@ -249,12 +324,14 @@ class JarvisUI:
         self._tick_clock()
 
     def _tick_clock(self):
+        """Update clock display and reschedule next update."""
         self._clock_lbl.config(text=datetime.now().strftime("%H:%M:%S"))
         self.root.after(1000, self._tick_clock)
 
     # ── Body ────────────────────────────────────────────────────
 
     def _build_body(self):
+        """Build the main body panels (left reactor/stats, right conversation)."""
         body = tk.Frame(self.root, bg=BG)
         body.grid(row=1, column=0, sticky="nsew", padx=8, pady=6)
         body.columnconfigure(1, weight=1)
@@ -266,6 +343,7 @@ class JarvisUI:
     # ── Left panel ──────────────────────────────────────────────
 
     def _build_left(self, parent):
+        """Build left panel with arc reactor, waveform, and system diagnostics."""
         left = tk.Frame(parent, bg=BG, width=248)
         left.grid(row=0, column=0, sticky="ns", padx=(0, 7))
         left.pack_propagate(False)
@@ -307,6 +385,7 @@ class JarvisUI:
     # ── Right panel ─────────────────────────────────────────────
 
     def _build_right(self, parent):
+        """Build right panel with conversation log and message display."""
         right = tk.Frame(parent, bg=BG)
         right.grid(row=0, column=1, sticky="nsew")
         right.columnconfigure(0, weight=1)
@@ -344,6 +423,13 @@ class JarvisUI:
     # ── Conversation helpers ─────────────────────────────────────
 
     def _conv_append(self, sender: str, text: str, tag: str):
+        """Append a complete message to conversation log.
+        
+        Args:
+            sender: Who sent the message ('YOU', 'JARVIS', 'ALERT', etc.)
+            text: Message content
+            tag: Color tag for styling
+        """
         self._conv.config(state="normal")
         ts = datetime.now().strftime("%H:%M:%S")
         self._conv.insert("end", f"\n[{ts}] ", "ts")
@@ -353,6 +439,7 @@ class JarvisUI:
         self._conv.see("end")
 
     def _conv_start_jarvis(self):
+        """Start a new JARVIS response in the conversation log."""
         self._conv.config(state="normal")
         ts = datetime.now().strftime("%H:%M:%S")
         self._conv.insert("end", f"\n[{ts}] ", "ts")
@@ -361,12 +448,22 @@ class JarvisUI:
         self._conv.see("end")
 
     def _conv_token(self, token: str):
+        """Append a single token to the current JARVIS response.
+        
+        Args:
+            token: Text token to append
+        """
         self._conv.config(state="normal")
         self._conv.insert("end", token, "body")
         self._conv.config(state="disabled")
         self._conv.see("end")
 
     def _conv_tool(self, name: str):
+        """Log a tool call in the conversation.
+        
+        Args:
+            name: Name of the tool being called
+        """
         self._conv.config(state="normal")
         self._conv.insert("end", f"\n  ⚙  calling {name}...", "tool")
         self._conv.config(state="disabled")
@@ -375,6 +472,7 @@ class JarvisUI:
     # ── Input bar ────────────────────────────────────────────────
 
     def _build_input(self):
+        """Build input bar with microphone button, text entry, and send button."""
         bar = tk.Frame(self.root, bg="#000d20", height=62)
         bar.grid(row=2, column=0, sticky="ew", padx=8, pady=(0, 8))
         bar.grid_propagate(False)
@@ -418,6 +516,7 @@ class JarvisUI:
         ).pack(side="left", padx=(8, 0))
 
     def _send(self, _=None):
+        """Send the current text input to the backend."""
         text = self._entry.get().strip()
         if not text:
             return
@@ -426,6 +525,7 @@ class JarvisUI:
         self.iq.put({"type": "text", "content": text})
 
     def _voice_click(self):
+        """Handle microphone button click to start voice input."""
         self._set_mode("LISTENING")
         self.waveform.set_active(True)
         self.iq.put({"type": "voice"})
@@ -433,6 +533,11 @@ class JarvisUI:
     # ── Status helpers ───────────────────────────────────────────
 
     def _set_mode(self, mode: str):
+        """Update the operational status display.
+        
+        Args:
+            mode: Status mode ('IDLE', 'LISTENING', 'THINKING', 'SPEAKING', 'ERROR')
+        """
         palette = {
             "IDLE":         (CYAN_MID, "IDLE"),
             "LISTENING":    (GREEN,    "LISTENING"),
@@ -447,6 +552,7 @@ class JarvisUI:
     # ── Queue polling ────────────────────────────────────────────
 
     def _poll(self):
+        """Poll output queue for messages from backend and dispatch them."""
         try:
             while True:
                 self._dispatch(self.oq.get_nowait())
@@ -455,6 +561,11 @@ class JarvisUI:
         self.root.after(38, self._poll)
 
     def _dispatch(self, msg: dict):
+        """Process and display a message from the backend.
+        
+        Args:
+            msg: Message dict with 'type' and associated data
+        """
         t = msg.get("type")
 
         if t == "status":
