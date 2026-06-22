@@ -1,4 +1,8 @@
-"""Shell + process management tools — full system command execution."""
+"""Shell + process management tools — full system command execution.
+
+Provides tools for running shell commands, listing processes, and terminating
+processes. Supports Windows PowerShell and Unix-like shells.
+"""
 
 import subprocess
 import platform
@@ -8,7 +12,24 @@ MAX_OUTPUT = 100_000  # chars
 
 
 def run_command_tool():
+    """Create a tool that executes shell/PowerShell commands.
+    
+    Supports Windows PowerShell and Unix shells. Output is truncated
+    if it exceeds MAX_OUTPUT characters.
+    
+    Returns:
+        Fury tool object for running commands
+    """
     def run_command(command: str, timeout: int = 300):
+        """Execute a shell command and capture its output.
+        
+        Args:
+            command: Shell command to execute
+            timeout: Maximum seconds to wait for command (default: 300)
+            
+        Returns:
+            Dict with exit_code, stdout, stderr, and success status
+        """
         try:
             if platform.system() == "Windows":
                 proc = subprocess.run(
@@ -71,7 +92,23 @@ def run_command_tool():
 
 
 def list_processes_tool():
+    """Create a tool that lists running processes with performance metrics.
+    
+    Processes are sorted by CPU usage in descending order.
+    Limited to top 50 processes.
+    
+    Returns:
+        Fury tool object for listing processes
+    """
     def list_processes(filter_name: str = ""):
+        """Get list of running processes, optionally filtered by name.
+        
+        Args:
+            filter_name: Optional process name to filter by (partial match, case-insensitive)
+            
+        Returns:
+            Dict with processes list (limited to 50) and total count
+        """
         try:
             import psutil
             procs = []
@@ -111,7 +148,23 @@ def list_processes_tool():
 
 
 def kill_process_tool():
+    """Create a tool that terminates running processes.
+    
+    Supports killing by process name (partial match) or exact PID.
+    
+    Returns:
+        Fury tool object for killing processes
+    """
     def kill_process(name: str = "", pid: int = 0):
+        """Terminate a running process by name or PID.
+        
+        Args:
+            name: Process name to kill (partial match, case-insensitive)
+            pid: Process ID to kill (exact match)
+            
+        Returns:
+            Dict with list of killed processes and count
+        """
         try:
             import psutil
             killed = []

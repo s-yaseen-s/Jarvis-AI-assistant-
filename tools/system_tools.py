@@ -1,3 +1,10 @@
+"""
+System Tools for J.A.R.V.I.S.
+
+Provides tools for querying system information and launching applications.
+Includes CPU, RAM, disk, battery monitoring and application launcher.
+"""
+
 import os
 import platform
 import subprocess
@@ -5,7 +12,20 @@ from fury import create_tool
 
 
 def system_info_tool():
+    """Create a tool that retrieves current system performance statistics.
+    
+    Returns system metrics including CPU usage, RAM, disk space, OS info,
+    and battery status (if available).
+    
+    Returns:
+        Fury tool object for getting system info
+    """
     def system_info():
+        """Query system performance metrics using psutil.
+        
+        Returns:
+            Dict containing CPU, RAM, disk, and OS information, or error message
+        """
         try:
             import psutil
             cpu = psutil.cpu_percent(interval=0.5)
@@ -51,7 +71,22 @@ def system_info_tool():
 
 
 def open_app_tool():
+    """Create a tool that launches applications by name.
+    
+    Supports Windows, macOS, and Linux application launching.
+    
+    Returns:
+        Fury tool object for opening applications
+    """
     def open_app(app_name: str):
+        """Launch an application by name or path.
+        
+        Args:
+            app_name: Application name (e.g., 'notepad', 'chrome') or executable path
+            
+        Returns:
+            Dict with success status and app name, or error message
+        """
         system = platform.system()
         try:
             if system == "Windows":
