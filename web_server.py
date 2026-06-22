@@ -23,10 +23,11 @@ from pathlib import Path
 from typing import Set
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
 from dotenv import load_dotenv
 from backend import JarvisBackend
+from task_scheduler import get_global_scheduler
 
 load_dotenv()
 
@@ -104,6 +105,49 @@ async def api_stats():
 async def api_auth():
     """Tell clients whether a token is required to connect."""
     return JSONResponse({"required": bool(os.getenv("JARVIS_TOKEN", "").strip())})
+
+
+# ── Task scheduler REST API ───────────────────────────────────────────────────
+
+@app.get("/api/tasks")
+async def api_tasks_list():
+    """Return all scheduled tasks with next-run times and recent history."""
+    s = get_global_scheduler()
+    return JSONResponse({"tasks": s.list_tasks() if s else []})
+
+
+@app.post("/api/tasks")
+async def api_tasks_create(request: Request):
+    """Create a new scheduled task. Body: {name, prompt, cron_expr}."""
+    s = get_global_scheduler()
+    if not s:
+        return JSONResponse({"ok": False, "error": "Scheduler not ready"}, status_code=503)
+    try:
+        body = await request.json()
+        task_id = s.add_task(body["name"], body["prompt"], body["cron_expr"])
+        return JSONResponse({"ok": True, "task_id": task_id})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
+
+
+@app.delete("/api/tasks/{task_id}")
+async def api_tasks_delete(task_id: str):
+    """Cancel and remove a scheduled task."""
+    s = get_global_scheduler()
+    if not s:
+        return JSONResponse({"ok": False, "error": "Scheduler not ready"}, status_code=503)
+    removed = s.remove_task(task_id)
+    return JSONResponse({"ok": removed})
+
+
+@app.post("/api/tasks/{task_id}/run")
+async def api_tasks_run_now(task_id: str):
+    """Immediately fire a scheduled task without waiting for its next cron time."""
+    s = get_global_scheduler()
+    if not s:
+        return JSONResponse({"ok": False, "error": "Scheduler not ready"}, status_code=503)
+    ok = s.run_now(task_id)
+    return JSONResponse({"ok": ok})
 
 
 @app.get("/api/clients")

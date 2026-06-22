@@ -543,6 +543,85 @@
     }
     #term-input::placeholder { color: var(--text2); }
 
+    /* ─────────────────── TASKS DRAWER ─────────────────── */
+    #tasks-drawer {
+      position: fixed;
+      bottom: 48px; right: 0;
+      width: 360px;
+      height: 440px;
+      background: rgba(0,4,12,0.98);
+      border-top: 1px solid var(--border-hi);
+      border-left: 1px solid var(--border-hi);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(110%);
+      transition: transform 0.22s ease;
+      pointer-events: auto;
+      font-family: var(--font);
+    }
+    #tasks-drawer.open { transform: translateX(0); }
+    .tasks-hd {
+      padding: 7px 14px;
+      font-size: 8px;
+      letter-spacing: 2px;
+      color: var(--text2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      background: rgba(0,8,20,0.6);
+    }
+    .tasks-close { background:transparent; border:none; color:var(--text2); cursor:pointer; font-size:13px; padding:2px 4px; }
+    .tasks-close:hover { color:var(--red); }
+    .tasks-body { flex:1; overflow-y:auto; padding:8px 10px; }
+    .tasks-body::-webkit-scrollbar { width:2px; }
+    .tasks-body::-webkit-scrollbar-thumb { background:var(--blue-dim); }
+    .task-item {
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 8px 10px;
+      margin-bottom: 7px;
+      background: rgba(0,15,35,0.6);
+      position: relative;
+    }
+    @keyframes task-flash {
+      0%,100% { border-color:var(--border); }
+      50% { border-color:var(--blue-glow); box-shadow:0 0 10px rgba(126,200,244,0.25); }
+    }
+    .task-item.fired { animation: task-flash 1.2s ease 2; }
+    .task-name { font-size:11px; color:var(--text-hi); font-weight:500; margin-bottom:3px; padding-right:90px; }
+    .task-cron { font-size:9px; color:var(--blue); letter-spacing:1px; margin-bottom:2px; }
+    .task-next { font-size:9px; color:var(--text2); }
+    .task-runs { font-size:8px; color:var(--text2); margin-top:4px; letter-spacing:0.5px; }
+    .task-actions { position:absolute; top:8px; right:8px; display:flex; gap:4px; }
+    .task-btn {
+      background:transparent; border:1px solid var(--border); color:var(--text2);
+      cursor:pointer; font-size:7px; padding:2px 5px; border-radius:2px; letter-spacing:1px;
+      font-family:var(--font);
+    }
+    .task-btn:hover { color:var(--blue-hi); border-color:var(--blue); }
+    .task-btn.del:hover { color:var(--red); border-color:var(--red); background:rgba(201,58,58,0.08); }
+    .tasks-empty { text-align:center; color:var(--text2); font-size:10px; padding:30px 16px; line-height:2.2; }
+    .tasks-ft {
+      padding: 7px 10px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 8px;
+      color: var(--text2);
+      letter-spacing: 0.5px;
+    }
+    .tasks-refresh {
+      background:transparent; border:1px solid var(--border); color:var(--text2);
+      cursor:pointer; font-size:8px; padding:3px 8px; border-radius:2px; letter-spacing:1px;
+      font-family:var(--font); flex-shrink:0;
+    }
+    .tasks-refresh:hover { color:var(--blue-hi); border-color:var(--blue); }
+
     /* ─────────────────── APP OVERLAY ─────────────────── */
     #app-overlay {
       position: fixed;
@@ -780,6 +859,10 @@
       <i class="fa-solid fa-grip"></i>
       <span class="tb-label">Apps</span>
     </button>
+    <button class="tb-btn" id="tb-tasks">
+      <i class="fa-solid fa-clock"></i>
+      <span class="tb-label">Tasks</span>
+    </button>
   </nav>
 
 </div>
@@ -797,6 +880,21 @@
   <div class="term-input-row">
     <span class="term-prompt">PS&gt;</span>
     <input type="text" id="term-input" placeholder="Enter command and press Enter…" autocomplete="off" spellcheck="false">
+  </div>
+</div>
+
+<!-- Tasks Drawer -->
+<div id="tasks-drawer">
+  <div class="tasks-hd">
+    <span><i class="fa-solid fa-clock-rotate-left"></i>&nbsp;&nbsp;SCHEDULED TASKS</span>
+    <button class="tasks-close" id="tasks-close"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="tasks-body" id="tasks-body">
+    <div class="tasks-empty">No scheduled tasks.<br>Say "Remind me every morning at 7am to check the weather"</div>
+  </div>
+  <div class="tasks-ft">
+    <button class="tasks-refresh" id="tasks-refresh"><i class="fa-solid fa-rotate"></i>&nbsp;Refresh</button>
+    <span>Use voice or chat to add tasks</span>
   </div>
 </div>
 
@@ -1201,6 +1299,13 @@ function connect(){
         addMsg('ERROR',msg.message,'msg-tool');
         showToast(msg.message,'error','Error');
         setStatus('idle');onSpeakEnd();break;
+      case 'tasks_update':
+        renderTasks(msg.tasks);break;
+      case 'task_fired':
+        showToast('Scheduled task triggered','info','Task');
+        const fired=document.getElementById('task-'+msg.task_id);
+        if(fired){fired.classList.add('fired');setTimeout(()=>fired.classList.remove('fired'),2500);}
+        break;
     }
   };
 }
@@ -1285,6 +1390,65 @@ document.getElementById('tb-chat').addEventListener('click',()=>{
   panel.style.display=hidden?'flex':'none';
   document.getElementById('tb-chat').className=hidden?'tb-btn on':'tb-btn';
 });
+
+/* ══ TASKS DRAWER ══ */
+const tasksDrawer=document.getElementById('tasks-drawer');
+const tasksBody=document.getElementById('tasks-body');
+
+function _esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function renderTasks(tasks){
+  if(!tasks||!tasks.length){
+    tasksBody.innerHTML='<div class="tasks-empty">No scheduled tasks.<br>Say "Remind me every Monday at 9am to check my email"</div>';
+    return;
+  }
+  tasksBody.innerHTML=tasks.map(t=>{
+    let nr='unknown';
+    if(t.next_run){
+      try{nr=new Date(t.next_run).toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});}
+      catch{nr=t.next_run;}
+    }
+    const dots=(t.recent_runs||[]).map(r=>`<span style="color:${r.status==='ok'?'var(--green)':'var(--red)'}">●</span>`).join(' ');
+    return `<div class="task-item" id="task-${_esc(t.task_id)}">
+      <div class="task-actions">
+        <button class="task-btn" onclick="runTask('${_esc(t.task_id)}')">RUN</button>
+        <button class="task-btn del" onclick="delTask('${_esc(t.task_id)}')">DEL</button>
+      </div>
+      <div class="task-name">${_esc(t.name)}</div>
+      <div class="task-cron">${_esc(t.cron_expr)}</div>
+      <div class="task-next">Next: ${nr}</div>
+      ${dots?`<div class="task-runs">History: ${dots}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function fetchTasks(){
+  try{const r=await fetch('/api/tasks');const d=await r.json();renderTasks(d.tasks||[]);}
+  catch(e){}
+}
+
+async function delTask(id){
+  try{await fetch('/api/tasks/'+id,{method:'DELETE'});fetchTasks();}
+  catch(e){}
+}
+
+async function runTask(id){
+  try{
+    await fetch('/api/tasks/'+id+'/run',{method:'POST'});
+    showToast('Task triggered','info','Task');
+  }catch(e){}
+}
+
+document.getElementById('tasks-close').addEventListener('click',()=>{
+  tasksDrawer.classList.remove('open');
+  document.getElementById('tb-tasks').className='tb-btn';
+});
+document.getElementById('tb-tasks').addEventListener('click',()=>{
+  const open=tasksDrawer.classList.toggle('open');
+  document.getElementById('tb-tasks').className=open?'tb-btn on':'tb-btn';
+  if(open)fetchTasks();
+});
+document.getElementById('tasks-refresh').addEventListener('click',fetchTasks);
 </script>
 
 

@@ -14,8 +14,11 @@ from .clipboard_tools  import get_clipboard_tool, set_clipboard_tool
 from .keyboard_tools   import press_hotkey_tool, type_text_tool, mouse_click_tool
 from .learning_tools   import (save_skill_tool, list_skills_tool,
                                 self_reflect_tool, get_reflections_tool)
-from .private_mode_tool import private_mode_tool, set_output_queue as set_private_mode_queue
-from .camera_tools      import capture_camera_tool, elevated_command_tool
+from .private_mode_tool  import private_mode_tool, set_output_queue as set_private_mode_queue
+from .camera_tools       import capture_camera_tool, elevated_command_tool
+from .scheduler_tools    import (schedule_task_tool, list_tasks_tool,
+                                  remove_task_tool, run_task_now_tool,
+                                  set_scheduler)
 from .screen_tools      import read_screen_tool
 from .calendar_tools    import (list_events_tool, today_events_tool,
                                 create_event_tool, delete_event_tool, update_event_tool)
@@ -74,6 +77,11 @@ def get_all_tools():
         read_screen_tool(),
         # Elevated commands
         elevated_command_tool(),
+        # Scheduled tasks
+        schedule_task_tool(),
+        list_tasks_tool(),
+        remove_task_tool(),
+        run_task_now_tool(),
         # Google Calendar
         list_events_tool(),
         today_events_tool(),

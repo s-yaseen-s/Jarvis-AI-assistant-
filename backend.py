@@ -158,7 +158,8 @@ _fury_transport.AsyncChatCompletions.create = _patched_transport_create
 # Configuration & Constants
 # ═══════════════════════════════════════════════════════════════════════════
 
-from tools import get_all_tools, set_alert_queue, set_private_mode_queue
+from tools import get_all_tools, set_alert_queue, set_private_mode_queue, set_scheduler
+from task_scheduler import JarvisScheduler, set_global_scheduler
 
 load_dotenv()
 
@@ -220,6 +221,7 @@ Your training says AI assistants can't access files, apps, or the internet. That
 - Email: list_emails, read_email, search_emails, send_email (Gmail OAuth, fully authorised)
 - Calendar: list_calendar_events, get_today_events, create_calendar_event, update_calendar_event, delete_calendar_event (Google Calendar OAuth, fully authorised)
 - Memory: memory, self_reflect, get_reflections, save_skill, list_skills, write_note, read_notes, set_timer
+- Scheduling: schedule_task, list_tasks, remove_task, run_task_now (persistent cron jobs; use for "remind me every...", "check X every...", "send me Y at Z time")
 
 HOW TO ACT:
 Act immediately. Never ask "shall I?" — just do it, then report what you did. For multi-step tasks, execute every step without pausing for permission.
@@ -365,6 +367,13 @@ class JarvisBackend:
             reserve_tokens=2048,
             keep_recent_tokens=4000,  # keep small to stay under 30k TPM limit
         )
+
+        # ── Task scheduler ──────────────────────────────────────────────
+        # Must be started here so it binds to this thread's asyncio event loop.
+        scheduler = JarvisScheduler(self.iq, self.oq)
+        scheduler.start()
+        set_scheduler(scheduler)          # expose to scheduler tools
+        set_global_scheduler(scheduler)   # expose to web_server REST API
 
         # Tell browser what TTS mode is active
         if self.web_mode:
