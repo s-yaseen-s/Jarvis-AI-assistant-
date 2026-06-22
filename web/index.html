@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>J.A.R.V.I.S.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    :root {
+      --bg:       #00080f;
+      --bg2:      #000d1a;
+      --panel:    rgba(0,14,34,0.92);
+      --panel2:   rgba(0,20,48,0.60);
+      --border:   rgba(40,110,200,0.20);
+      --border-hi:rgba(40,130,220,0.50);
+
+      --blue:     #1a7fc1;
+      --blue-hi:  #4ea8e8;
+      --blue-dim: #0a2035;
+      --blue-glow:#7ec8f4;
+
+      --text:     #7aa8c4;
+      --text2:    #3d6278;
+      --text-hi:  #c8e4f5;
+
+      --green:    #3db87a;
+      --green-hi: #6ddfa8;
+      --orange:   #d4900a;
+      --red:      #c93a3a;
+
+      --font: 'IBM Plex Mono', 'Courier New', monospace;
+      --radius: 2px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+      font-size: 11px;
+      font-weight: 400;
+    }
+
+    #three-canvas { position:fixed; inset:0; z-index:0; }
+    #ui { position:relative; z-index:10; height:100vh; display:flex; flex-direction:column; pointer-events:none; }
+    #ui > * { pointer-events:auto; }
+
+    /* ─────────────────── HEADER ─────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      height: 48px;
+      background: rgba(0,6,16,0.96);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 20px;
+    }
+
+    .h-brand { display:flex; flex-direction:column; gap:2px; flex-shrink:0; }
+    .h-title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 5px;
+      color: var(--blue-hi);
+    }
+    .h-sub { font-size: 7px; letter-spacing: 3px; color: var(--text2); font-weight: 300; }
+
+    .h-divider { width:1px; height:28px; background:var(--border); flex-shrink:0; }
+
+    .h-indicators { display:flex; gap:16px; align-items:center; }
+    .h-ind {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      color: var(--text2);
+    }
+    .h-ind-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text2);
+    }
+    .h-ind.online .h-ind-dot { background: var(--green); animation: pulse-dot 2.5s ease-in-out infinite; }
+    .h-ind.online { color: var(--green); }
+    .h-ind.active .h-ind-dot { background: var(--blue-hi); }
+    .h-ind.active { color: var(--blue-hi); }
+    @keyframes pulse-dot {
+      0%,100% { opacity:1; box-shadow:0 0 0 0 rgba(61,184,122,0.4); }
+      50%      { opacity:0.7; box-shadow:0 0 0 4px rgba(61,184,122,0); }
+    }
+
+    /* ── header perf meters ── */
+    .h-perf { display:flex; gap:20px; align-items:center; }
+    .h-metric { display:flex; flex-direction:column; gap:4px; min-width:64px; }
+    .h-metric-row { display:flex; justify-content:space-between; }
+    .h-metric-label { font-size:7px; letter-spacing:2px; color:var(--text2); font-weight:500; }
+    .h-metric-val   { font-size:7px; letter-spacing:1px; color:var(--blue-hi); }
+    .h-metric-track { height:2px; background:var(--blue-dim); border-radius:1px; overflow:hidden; }
+    .h-metric-fill  { height:100%; background:linear-gradient(90deg,var(--blue),var(--blue-hi)); transition:width 1s ease; }
+
+    .h-clock { margin-left:auto; font-size:16px; font-weight:300; letter-spacing:3px; color:var(--text-hi); flex-shrink:0; }
+
+    /* ── Private banner ── */
+    #private-banner {
+      display: none;
+      position: fixed;
+      top: 48px;
+      left: 0; right: 0;
+      z-index: 50;
+      background: rgba(30,0,0,0.96);
+      border-bottom: 1px solid var(--red);
+      padding: 5px 0;
+      text-align: center;
+      font-size: 9px;
+      letter-spacing: 4px;
+      color: var(--red);
+    }
+    #private-banner.visible { display:block; }
+
+    /* ─────────────────── MAIN ─────────────────── */
+    main { flex:1; display:flex; overflow:hidden; padding:10px; gap:10px; pointer-events:none; }
+    main > * { pointer-events:auto; }
+
+    /* ─────────────────── CHAT PANEL ─────────────────── */
+    .chat-panel {
+      width: 340px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 8px 14px;
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      color: var(--text2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      text-transform: uppercase;
+      background: rgba(0,10,24,0.5);
+    }
+    .panel-badge {
+      font-size: 8px;
+      padding: 2px 7px;
+      border: 1px solid var(--border);
+      border-radius: 1px;
+      color: var(--text2);
+      font-weight: 400;
+    }
+    .panel-badge.active { border-color: var(--blue-hi); color: var(--blue-hi); }
+
+    /* ── Messages ── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .messages::-webkit-scrollbar { width: 2px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--blue-dim); }
+
+    .msg { font-size: 11px; line-height: 1.6; }
+
+    /* JARVIS */
+    .msg.from-jarvis {
+      padding: 8px 10px;
+      border-left: 2px solid var(--blue-hi);
+      background: rgba(26,127,193,0.06);
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+    .msg.from-jarvis .msg-label { color: var(--blue-hi); font-weight:500; }
+    .msg.from-jarvis .msg-body  { color: var(--text-hi); margin-top:3px; }
+
+    /* User */
+    .msg.from-user {
+      padding: 7px 10px;
+      border-right: 2px solid rgba(200,228,245,0.3);
+      background: rgba(255,255,255,0.03);
+      border-radius: var(--radius) 0 0 var(--radius);
+    }
+    .msg.from-user .msg-meta  { flex-direction: row-reverse; }
+    .msg.from-user .msg-label { color: var(--text-hi); }
+    .msg.from-user .msg-body  { color: var(--text); text-align:right; margin-top:3px; }
+
+    /* Tool */
+    .msg.from-tool {
+      padding: 4px 10px;
+      border-left: 2px solid rgba(212,144,10,0.5);
+      background: rgba(212,144,10,0.04);
+    }
+    .msg.from-tool .msg-label { color: var(--orange); }
+    .msg.from-tool .msg-body  { color: var(--orange); opacity:0.75; font-size:10px; }
+
+    /* System */
+    .msg.from-sys {
+      padding: 3px 10px;
+      opacity: 0.65;
+    }
+    .msg.from-sys .msg-label { color: var(--green); }
+    .msg.from-sys .msg-body  { color: var(--text2); font-size:10px; }
+
+    .msg-meta  { display:flex; gap:8px; align-items:center; }
+    .msg-time  { font-size:9px; color:var(--text2); font-weight:300; }
+    .msg-label { font-size:9px; letter-spacing:1px; }
+    .msg-body  { color:var(--text); }
+    .msg-body.streaming::after {
+      content: '▋';
+      color: var(--blue-hi);
+      animation: blink-cur 0.8s steps(1) infinite;
+    }
+    @keyframes blink-cur { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* ── VAD ── */
+    .vad-bar {
+      border-top: 1px solid var(--border);
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .vad-label { font-size:8px; letter-spacing:1.5px; color:var(--text2); flex-shrink:0; }
+    .vad-track { flex:1; height:2px; background:var(--blue-dim); border-radius:1px; overflow:hidden; }
+    .vad-fill  { height:100%; width:0%; background:var(--green); transition:width 0.04s linear; }
+
+    /* ── Transcript ── */
+    .transcript-bar {
+      border-top: 1px solid var(--border);
+      padding: 7px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+      flex-shrink: 0;
+    }
+    .t-icon { font-size:10px; width:14px; color:var(--text2); text-align:center; flex-shrink:0; }
+    .t-icon.rec  { color:var(--green); }
+    .t-icon.proc { color:var(--orange); }
+    .t-icon.priv { color:var(--red); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .t-icon.proc i { display:inline-block; animation:spin 1s linear infinite; }
+    #live-text { flex:1; font-size:11px; color:var(--blue-hi); font-style:italic; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #live-text.ph { color:var(--text2); font-style:normal; }
+
+    /* ── Mic button ── */
+    .cp-mic-wrap {
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 0;
+      gap: 16px;
+      background: rgba(0,8,20,0.6);
+      flex-shrink: 0;
+    }
+    #mic-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--blue-dim);
+      color: var(--text2);
+      font-size: 17px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      position: relative;
+    }
+    #mic-btn::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    #mic-btn:hover { border-color:var(--blue-hi); color:var(--blue-hi); }
+
+    #mic-btn.idle    { border-color:var(--border); color:var(--text2); }
+    #mic-btn.voice   { border-color:var(--green); color:var(--green); background:rgba(61,184,122,0.08); }
+    #mic-btn.voice::after  { border-color:rgba(61,184,122,0.3); animation:ring-out 1s ease-out infinite; }
+    #mic-btn.speaking { border-color:var(--blue-hi); color:var(--blue-hi); background:rgba(78,168,232,0.08); }
+    #mic-btn.speaking::after { border-color:rgba(78,168,232,0.3); animation:ring-out 1.1s ease-out infinite; }
+    #mic-btn.paused  { border-color:var(--border); color:var(--text2); opacity:0.45; }
+    #mic-btn.private { border-color:var(--red); color:var(--red); background:rgba(201,58,58,0.08); }
+    @keyframes ring-out { 0%{transform:scale(1);opacity:0.6} 100%{transform:scale(1.7);opacity:0} }
+
+    .mic-label { font-size:8px; letter-spacing:1.5px; color:var(--text2); min-width:58px; text-align:center; }
+
+    /* ─────────────────── SPHERE AREA ─────────────────── */
+    .sphere-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      position: relative;
+    }
+    #sphere-status {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      letter-spacing: 4px;
+      color: var(--text2);
+      text-transform: uppercase;
+      font-weight: 300;
+    }
+    #sphere-status.thinking { color:var(--orange); }
+    #sphere-status.speaking { color:var(--blue-hi); }
+    #sphere-status.listening{ color:var(--green); }
+    #sphere-status.private  { color:var(--red); }
+
+    /* ─────────────────── METRICS PANEL ─────────────────── */
+    .metrics-panel {
+      width: 210px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .mp-section {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .mp-section:last-child { border-bottom:none; }
+    .mp-section-title {
+      font-size: 7px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      color: var(--text2);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* Metric bars */
+    .mp-metric { margin-bottom:10px; }
+    .mp-metric:last-child { margin-bottom:0; }
+    .mp-metric-row { display:flex; justify-content:space-between; margin-bottom:4px; }
+    .mp-metric-name { font-size:9px; letter-spacing:1px; color:var(--text); }
+    .mp-metric-val  { font-size:9px; color:var(--blue-hi); letter-spacing:1px; }
+    .mp-track { height:2px; background:var(--blue-dim); border-radius:1px; overflow:hidden; }
+    .mp-fill  { height:100%; background:linear-gradient(90deg,var(--blue),var(--blue-hi)); transition:width 1s ease; border-radius:1px; }
+    .mp-fill.warn  { background:linear-gradient(90deg,var(--orange),#f5c000); }
+    .mp-fill.crit  { background:linear-gradient(90deg,var(--red),#f47c7c); }
+
+    /* Status list */
+    .mp-status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+    }
+    .mp-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--text2);
+      flex-shrink: 0;
+    }
+    .mp-dot.on  { background:var(--green); }
+    .mp-dot.off { background:var(--red); }
+    .mp-dot.warn{ background:var(--orange); }
+    .mp-status-label { font-size:9px; letter-spacing:.5px; color:var(--text); }
+    .mp-status-val   { margin-left:auto; font-size:9px; color:var(--text2); }
+
+    /* Session info rows */
+    .mp-info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+    }
+    .mp-info-key { font-size:9px; letter-spacing:.5px; color:var(--text2); }
+    .mp-info-val { font-size:9px; color:var(--text-hi); font-weight:500; letter-spacing:1px; }
+
+    /* ─────────────────── TOOLBAR ─────────────────── */
+    nav.toolbar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      background: rgba(0,6,16,0.96);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tb-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      min-width: 56px;
+      height: 46px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(0,14,32,0.6);
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .tb-btn i { font-size: 13px; }
+    .tb-label { font-size: 7px; letter-spacing: 1px; text-transform:uppercase; transition:color 0.18s; }
+    .tb-btn:hover { border-color:var(--blue-hi); color:var(--blue-hi); background:rgba(26,127,193,0.08); }
+    .tb-btn:hover .tb-label { color:var(--blue-hi); }
+    .tb-btn.on  { border-color:rgba(78,168,232,0.6); color:var(--blue-hi); background:rgba(26,127,193,0.12); }
+    .tb-btn.on .tb-label { color:var(--blue-hi); }
+    .tb-btn.on-green { border-color:rgba(61,184,122,0.6); color:var(--green); background:rgba(61,184,122,0.08); }
+    .tb-btn.on-green .tb-label { color:var(--green); }
+    .tb-btn.on-red  { border-color:rgba(201,58,58,0.6); color:var(--red); background:rgba(201,58,58,0.08); }
+    .tb-btn.on-red .tb-label { color:var(--red); }
+
+    /* ─────────────────── TOASTS ─────────────────── */
+    #toast-container {
+      position: fixed;
+      top: 58px;
+      right: 12px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      pointer-events: none;
+    }
+    .toast {
+      min-width: 180px;
+      max-width: 260px;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      font-size: 10px;
+      font-family: var(--font);
+      border: 1px solid;
+      backdrop-filter: blur(20px);
+      opacity: 0;
+      transform: translateX(12px);
+      transition: all 0.25s ease;
+    }
+    .toast.visible { opacity:1; transform:translateX(0); }
+    .toast-label { font-size:7px; letter-spacing:2px; opacity:0.55; margin-bottom:3px; text-transform:uppercase; }
+    .toast-info    { background:rgba(0,18,40,0.94); border-color:rgba(78,168,232,0.5); color:var(--blue-hi); }
+    .toast-tool    { background:rgba(24,14,0,0.94); border-color:rgba(212,144,10,0.5); color:var(--orange); }
+    .toast-success { background:rgba(0,18,10,0.94); border-color:rgba(61,184,122,0.5); color:var(--green); }
+    .toast-alert   { background:rgba(24,14,0,0.94); border-color:rgba(212,144,10,0.5); color:var(--orange); }
+    .toast-error   { background:rgba(30,0,0,0.94);  border-color:rgba(201,58,58,0.5);  color:var(--red); }
+
+    /* ─────────────────── SCANLINES ─────────────────── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.04) 3px,rgba(0,0,0,0.04) 4px);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* ─────────────────── TERMINAL DRAWER ─────────────────── */
+    #terminal-drawer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 260px;
+      background: rgba(0,4,12,0.98);
+      border-top: 1px solid var(--border-hi);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.22s ease;
+      pointer-events: auto;
+      font-family: var(--font);
+    }
+    #terminal-drawer.open { transform: translateY(0); }
+    .term-header {
+      padding: 7px 14px;
+      font-size: 8px;
+      letter-spacing: 2px;
+      color: var(--text2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      background: rgba(0,8,20,0.6);
+    }
+    .term-close { background:transparent; border:none; color:var(--text2); cursor:pointer; font-size:13px; padding:2px 4px; }
+    .term-close:hover { color:var(--red); }
+    .term-output {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 14px;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+    .term-output::-webkit-scrollbar { width:2px; }
+    .term-output::-webkit-scrollbar-thumb { background:var(--blue-dim); }
+    .term-line-cmd { color: var(--blue-hi); }
+    .term-line-out { color: var(--text); }
+    .term-line-err { color: var(--red); }
+    .term-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .term-prompt { color: var(--blue-hi); font-size: 11px; flex-shrink: 0; }
+    #term-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-hi);
+      font-family: var(--font);
+      font-size: 11px;
+      outline: none;
+    }
+    #term-input::placeholder { color: var(--text2); }
+
+    /* ─────────────────── APP OVERLAY ─────────────────── */
+    #app-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,4,14,0.96);
+      backdrop-filter: blur(24px);
+      z-index: 150;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      pointer-events: auto;
+    }
+    #app-overlay.open { display: flex; }
+    .app-overlay-title {
+      font-size: 9px;
+      letter-spacing: 4px;
+      color: var(--text2);
+      text-transform: uppercase;
+    }
+    .app-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 100px);
+      gap: 10px;
+    }
+    .app-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel2);
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .app-item:hover { border-color:var(--blue-hi); background:rgba(26,127,193,0.1); }
+    .app-item i { font-size: 22px; color: var(--blue-hi); }
+    .app-item span { font-size: 8px; letter-spacing: 1px; color: var(--text); text-align: center; }
+    .app-overlay-close {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text2);
+      cursor: pointer;
+      padding: 6px 18px;
+      font-family: var(--font);
+      font-size: 9px;
+      letter-spacing: 2px;
+      border-radius: var(--radius);
+      transition: all 0.18s;
+    }
+    .app-overlay-close:hover { border-color:var(--red); color:var(--red); }
+  </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+<canvas id="three-canvas"></canvas>
+<div id="private-banner">PRIVATE MODE &nbsp;—&nbsp; AUDIO INPUT SUSPENDED</div>
+
+<div id="ui">
+
+  <!-- ═══ HEADER ═══ -->
+  <header>
+    <div class="h-brand">
+      <div class="h-title">J.A.R.V.I.S.</div>
+      <div class="h-sub">JUST A RATHER VERY INTELLIGENT SYSTEM</div>
+    </div>
+
+    <div class="h-divider"></div>
+
+    <div class="h-indicators">
+      <div class="h-ind online"><div class="h-ind-dot"></div>ONLINE</div>
+      <div class="h-ind active"><div class="h-ind-dot"></div>CORE</div>
+    </div>
+
+    <div class="h-divider"></div>
+
+    <div class="h-perf">
+      <div class="h-metric">
+        <div class="h-metric-row">
+          <span class="h-metric-label">CPU</span>
+          <span class="h-metric-val" id="cpu-val">--</span>
+        </div>
+        <div class="h-metric-track"><div class="h-metric-fill" id="cpu-fill" style="width:0%"></div></div>
+      </div>
+      <div class="h-metric">
+        <div class="h-metric-row">
+          <span class="h-metric-label">RAM</span>
+          <span class="h-metric-val" id="ram-val">--</span>
+        </div>
+        <div class="h-metric-track"><div class="h-metric-fill" id="ram-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="h-clock" id="clock">00:00:00</div>
+  </header>
+
+  <!-- ═══ MAIN ═══ -->
+  <main>
+
+    <!-- Chat panel -->
+    <div class="chat-panel">
+      <div class="panel-header">
+        <span>Dialogue Log</span>
+        <span class="panel-badge" id="tts-badge">TTS: BROWSER</span>
+      </div>
+      <div class="messages" id="messages"></div>
+
+      <div class="vad-bar">
+        <span class="vad-label">AUDIO</span>
+        <div class="vad-track"><div class="vad-fill" id="vad-fill"></div></div>
+      </div>
+
+      <div class="transcript-bar">
+        <div class="t-icon" id="t-icon"><i class="fa-regular fa-circle"></i></div>
+        <div id="live-text" class="ph">Initialising microphone…</div>
+      </div>
+
+      <div class="cp-mic-wrap">
+        <span class="mic-label" id="mic-hint">ALWAYS ON</span>
+        <button id="mic-btn" class="idle" title="Click to pause / resume">
+          <i class="fa-solid fa-microphone" id="mic-icon"></i>
+        </button>
+        <span class="mic-label" id="mic-hint2">&nbsp;</span>
+      </div>
+    </div>
+
+    <!-- Sphere -->
+    <div class="sphere-area">
+      <div id="sphere-status">STANDBY</div>
+    </div>
+
+    <!-- Metrics panel -->
+    <div class="metrics-panel">
+
+      <div class="mp-section">
+        <div class="mp-section-title">System</div>
+        <div class="mp-metric">
+          <div class="mp-metric-row">
+            <span class="mp-metric-name">CPU</span>
+            <span class="mp-metric-val" id="mp-cpu">--</span>
+          </div>
+          <div class="mp-track"><div class="mp-fill" id="mp-cpu-fill" style="width:0%"></div></div>
+        </div>
+        <div class="mp-metric">
+          <div class="mp-metric-row">
+            <span class="mp-metric-name">Memory</span>
+            <span class="mp-metric-val" id="mp-ram">--</span>
+          </div>
+          <div class="mp-track"><div class="mp-fill" id="mp-ram-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="mp-section">
+        <div class="mp-section-title">Services</div>
+        <div class="mp-status-row">
+          <div class="mp-dot on" id="dot-api"></div>
+          <span class="mp-status-label">OpenAI API</span>
+          <span class="mp-status-val">GPT-4o mini</span>
+        </div>
+        <div class="mp-status-row">
+          <div class="mp-dot on"></div>
+          <span class="mp-status-label">STT Engine</span>
+          <span class="mp-status-val">Whisper</span>
+        </div>
+        <div class="mp-status-row">
+          <div class="mp-dot on" id="dot-tts"></div>
+          <span class="mp-status-label">TTS Engine</span>
+          <span class="mp-status-val" id="mp-tts-val">Browser</span>
+        </div>
+        <div class="mp-status-row">
+          <div class="mp-dot on"></div>
+          <span class="mp-status-label">GPU</span>
+          <span class="mp-status-val">GTX 1650</span>
+        </div>
+      </div>
+
+      <div class="mp-section" style="flex:1">
+        <div class="mp-section-title">Session</div>
+        <div class="mp-info-row">
+          <span class="mp-info-key">Uptime</span>
+          <span class="mp-info-val" id="mp-uptime">00:00:00</span>
+        </div>
+        <div class="mp-info-row">
+          <span class="mp-info-key">Messages</span>
+          <span class="mp-info-val" id="mp-msgcount">0</span>
+        </div>
+        <div class="mp-info-row">
+          <span class="mp-info-key">Tools</span>
+          <span class="mp-info-val">45</span>
+        </div>
+        <div class="mp-info-row">
+          <span class="mp-info-key">Model</span>
+          <span class="mp-info-val">4o-mini</span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ═══ TOOLBAR ═══ -->
+  <nav class="toolbar">
+    <button class="tb-btn on-green" id="tb-power">
+      <i class="fa-solid fa-power-off"></i>
+      <span class="tb-label">Power</span>
+    </button>
+    <button class="tb-btn on" id="tb-mic">
+      <i class="fa-solid fa-microphone"></i>
+      <span class="tb-label">Mic</span>
+    </button>
+    <button class="tb-btn" id="tb-cam">
+      <i class="fa-solid fa-camera"></i>
+      <span class="tb-label">Camera</span>
+    </button>
+    <button class="tb-btn" id="tb-screen">
+      <i class="fa-solid fa-desktop"></i>
+      <span class="tb-label">Screen</span>
+    </button>
+    <button class="tb-btn" id="tb-private">
+      <i class="fa-solid fa-lock"></i>
+      <span class="tb-label">Private</span>
+    </button>
+    <button class="tb-btn on" id="tb-chat">
+      <i class="fa-solid fa-comment-dots"></i>
+      <span class="tb-label">Chat</span>
+    </button>
+    <button class="tb-btn" id="tb-term">
+      <i class="fa-solid fa-terminal"></i>
+      <span class="tb-label">Terminal</span>
+    </button>
+    <button class="tb-btn" id="tb-apps">
+      <i class="fa-solid fa-grip"></i>
+      <span class="tb-label">Apps</span>
+    </button>
+  </nav>
+
+</div>
+
+<!-- Terminal Drawer -->
+<div id="terminal-drawer">
+  <div class="term-header">
+    <span><i class="fa-solid fa-terminal"></i>&nbsp;&nbsp;POWERSHELL TERMINAL</span>
+    <button class="term-close" id="term-close"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="term-output" id="term-output">
+    <div class="term-line-out" style="color:var(--text2)">JARVIS terminal — commands run via PowerShell</div>
+    <div class="term-line-out" style="color:var(--text2);margin-bottom:6px">───────────────────────────────────</div>
+  </div>
+  <div class="term-input-row">
+    <span class="term-prompt">PS&gt;</span>
+    <input type="text" id="term-input" placeholder="Enter command and press Enter…" autocomplete="off" spellcheck="false">
+  </div>
+</div>
+
+<!-- App Launcher -->
+<div id="app-overlay">
+  <div class="app-overlay-title">Applications</div>
+  <div class="app-grid">
+    <div class="app-item" data-label="VS Code"><i class="fa-solid fa-code"></i><span>VS Code</span></div>
+    <div class="app-item" data-label="Google Chrome"><i class="fa-brands fa-chrome"></i><span>Chrome</span></div>
+    <div class="app-item" data-label="File Explorer"><i class="fa-solid fa-folder-open"></i><span>Files</span></div>
+    <div class="app-item" data-label="Task Manager"><i class="fa-solid fa-chart-simple"></i><span>Task Mgr</span></div>
+    <div class="app-item" data-label="Calculator"><i class="fa-solid fa-calculator"></i><span>Calc</span></div>
+    <div class="app-item" data-label="Notepad"><i class="fa-solid fa-file-lines"></i><span>Notepad</span></div>
+    <div class="app-item" data-label="Windows Settings"><i class="fa-solid fa-gear"></i><span>Settings</span></div>
+    <div class="app-item" data-label="Spotify"><i class="fa-brands fa-spotify"></i><span>Spotify</span></div>
+  </div>
+  <button class="app-overlay-close" id="app-close"><i class="fa-solid fa-xmark"></i>&nbsp; Close</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script>
+/* ══ THREE.JS SPHERE ══ */
+(function(){
+  const canvas=document.getElementById('three-canvas');
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight);
+  const scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,200);
+  camera.position.z=6.5;
+  const group=new THREE.Group(); scene.add(group);
+  const icoA=new THREE.IcosahedronGeometry(2,3);
+  group.add(new THREE.LineSegments(new THREE.EdgesGeometry(icoA),new THREE.LineBasicMaterial({color:0x1a6faa,transparent:true,opacity:.45,blending:THREE.AdditiveBlending})));
+  const wfB=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(1.72,2)),new THREE.LineBasicMaterial({color:0x2a90cc,transparent:true,opacity:.28,blending:THREE.AdditiveBlending}));
+  group.add(wfB);
+  const wfC=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(1.3,1)),new THREE.LineBasicMaterial({color:0x4ea8e8,transparent:true,opacity:.18,blending:THREE.AdditiveBlending}));
+  group.add(wfC);
+  group.add(new THREE.Points(icoA,new THREE.PointsMaterial({color:0x4ea8e8,size:.038,transparent:true,opacity:.8,blending:THREE.AdditiveBlending})));
+  group.add(new THREE.Mesh(new THREE.SphereGeometry(1.25,32,32),new THREE.MeshBasicMaterial({color:0x001630,transparent:true,opacity:.3,blending:THREE.AdditiveBlending})));
+  [.08,.18,.32].forEach((r,i)=>group.add(new THREE.Mesh(new THREE.SphereGeometry(2.05+r,16,16),new THREE.MeshBasicMaterial({color:0x082848,transparent:true,opacity:.05/(i+1),side:THREE.BackSide,blending:THREE.AdditiveBlending}))));
+  const ring=new THREE.Line(new THREE.TorusGeometry(2.55,.004,2,120),new THREE.LineBasicMaterial({color:0x1a5a9a,transparent:true,opacity:.35,blending:THREE.AdditiveBlending}));
+  ring.rotation.x=Math.PI/2.4; group.add(ring);
+  const N=300,pp=new Float32Array(N*3);
+  for(let i=0;i<N;i++){const phi=Math.acos(2*Math.random()-1),th=Math.random()*Math.PI*2,r=2.6+Math.random()*1.8;pp[i*3]=r*Math.sin(phi)*Math.cos(th);pp[i*3+1]=r*Math.sin(phi)*Math.sin(th);pp[i*3+2]=r*Math.cos(phi);}
+  const pg=new THREE.BufferGeometry(); pg.setAttribute('position',new THREE.BufferAttribute(pp,3));
+  scene.add(new THREE.Points(pg,new THREE.PointsMaterial({color:0x2266aa,size:.024,transparent:true,opacity:.7,blending:THREE.AdditiveBlending})));
+  const sN=2000,sp=new Float32Array(sN*3);
+  for(let i=0;i<sN;i++){sp[i*3]=(Math.random()-.5)*120;sp[i*3+1]=(Math.random()-.5)*120;sp[i*3+2]=(Math.random()-.5)*120;}
+  const sg=new THREE.BufferGeometry(); sg.setAttribute('position',new THREE.BufferAttribute(sp,3));
+  scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0x1a3355,size:.05,transparent:true,opacity:.4})));
+  window._jarvisPulse=0; let t=0;
+  (function anim(){
+    requestAnimationFrame(anim); t+=.005;
+    group.rotation.y+=.0025; group.rotation.x=Math.sin(t*.4)*.07;
+    wfB.rotation.y=-group.rotation.y*1.4;
+    wfC.rotation.y=group.rotation.y*2.1; wfC.rotation.z=t*.7;
+    group.scale.setScalar(1+Math.sin(t*(window._jarvisPulse===1?4:window._jarvisPulse===2?3:1.5))*(window._jarvisPulse?0.035:.015));
+    ring.rotation.y=t*.5; ring.rotation.z=Math.sin(t*.3)*.3;
+    renderer.render(scene,camera);
+  })();
+  window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+})();
+
+/* ══ CLOCK & UPTIME ══ */
+const clockEl=document.getElementById('clock');
+const uptimeEl=document.getElementById('mp-uptime');
+const sessionStart=Date.now();
+setInterval(()=>{
+  const n=new Date(), p=v=>String(v).padStart(2,'0');
+  clockEl.textContent=`${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
+  const s=Math.floor((Date.now()-sessionStart)/1000);
+  uptimeEl.textContent=`${p(Math.floor(s/3600))}:${p(Math.floor(s/60)%60)}:${p(s%60)}`;
+},1000);
+
+/* ══ PERFORMANCE STATS ══ */
+async function fetchStats(){
+  try{
+    const r=await fetch('/api/stats'); if(!r.ok)return;
+    const d=await r.json();
+    if(d.cpu!=null){
+      const c=Math.min(d.cpu,100);
+      document.getElementById('cpu-val').textContent=d.cpu+'%';
+      document.getElementById('cpu-fill').style.width=c+'%';
+      document.getElementById('mp-cpu').textContent=d.cpu+'%';
+      const mf=document.getElementById('mp-cpu-fill');
+      mf.style.width=c+'%';
+      mf.className='mp-fill'+(c>90?' crit':c>70?' warn':'');
+    }
+    if(d.ram!=null){
+      const r2=Math.min(d.ram,100);
+      document.getElementById('ram-val').textContent=d.ram+'%';
+      document.getElementById('ram-fill').style.width=r2+'%';
+      document.getElementById('mp-ram').textContent=d.ram+'%';
+      const mf2=document.getElementById('mp-ram-fill');
+      mf2.style.width=r2+'%';
+      mf2.className='mp-fill'+(r2>90?' crit':r2>70?' warn':'');
+    }
+  }catch{}
+}
+fetchStats(); setInterval(fetchStats,3000);
+
+/* ══ TOASTS ══ */
+const toastContainer=document.getElementById('toast-container');
+function showToast(message,type='info',label=''){
+  const t=document.createElement('div');
+  t.className=`toast toast-${type}`;
+  t.innerHTML=(label?`<div class="toast-label">${label}</div>`:'')
+             +`<div>${message}</div>`;
+  toastContainer.appendChild(t);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('visible')));
+  setTimeout(()=>{t.classList.remove('visible');setTimeout(()=>t.remove(),280);},3600);
+}
+
+/* ══ UI REFS ══ */
+const msgsEl    =document.getElementById('messages');
+const statusEl  =document.getElementById('sphere-status');
+const liveTextEl=document.getElementById('live-text');
+const tIconEl   =document.getElementById('t-icon');
+const micBtn    =document.getElementById('mic-btn');
+const micHint   =document.getElementById('mic-hint');
+const ttsBadge  =document.getElementById('tts-badge');
+const vadFill   =document.getElementById('vad-fill');
+const privBanner=document.getElementById('private-banner');
+const tbPrivate =document.getElementById('tb-private');
+const msgCountEl=document.getElementById('mp-msgcount');
+
+let streamEl=null, fullReply='', backendTTS=false;
+let privateMode=false, userPaused=false, isSpeaking=false;
+let msgCount=0;
+
+/* ══ MESSAGES ══ */
+function ts(){const n=new Date(),p=v=>String(v).padStart(2,'0');return `${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+const CLS={'msg-jarvis':'from-jarvis','msg-you':'from-user','msg-tool':'from-tool','msg-sys':'from-sys'};
+
+function addMsg(sender,text,cls){
+  const w=document.createElement('div');
+  w.className='msg '+(CLS[cls]||'from-sys');
+  w.innerHTML=`<div class="msg-meta"><span class="msg-time">${ts()}</span><span class="msg-label">${esc(sender)}</span></div>`
+            +`<div class="msg-body">${esc(text)}</div>`;
+  msgsEl.appendChild(w); msgsEl.scrollTop=msgsEl.scrollHeight;
+  if(cls==='msg-you'||cls==='msg-jarvis'){msgCount++;msgCountEl.textContent=msgCount;}
+}
+
+function startStream(){
+  const w=document.createElement('div'); w.className='msg from-jarvis';
+  const meta=document.createElement('div'); meta.className='msg-meta';
+  meta.innerHTML=`<span class="msg-time">${ts()}</span><span class="msg-label">JARVIS</span>`;
+  const body=document.createElement('div'); body.className='msg-body streaming';
+  w.appendChild(meta); w.appendChild(body);
+  msgsEl.appendChild(w); streamEl=body; fullReply='';
+  msgsEl.scrollTop=msgsEl.scrollHeight;
+}
+function appendToken(t){if(!streamEl)startStream();streamEl.textContent+=t;fullReply+=t;msgsEl.scrollTop=msgsEl.scrollHeight;}
+function endStream(){
+  if(streamEl){streamEl.classList.remove('streaming');streamEl=null;}
+  msgCount++; msgCountEl.textContent=msgCount;
+}
+
+function setStatus(mode){
+  statusEl.className=''; if(mode)statusEl.classList.add(mode.toLowerCase());
+  statusEl.textContent=mode.toUpperCase();
+  window._jarvisPulse={thinking:1,speaking:2,listening:2}[mode.toLowerCase()]??0;
+}
+
+function setLive(text,iconMode){
+  liveTextEl.textContent=text||''; liveTextEl.className=text?'':'ph';
+  const icons={rec:'<i class="fa-solid fa-circle-dot"></i>',proc:'<i class="fa-solid fa-gear"></i>',priv:'<i class="fa-solid fa-ban"></i>'};
+  tIconEl.className='t-icon '+(iconMode||'');
+  tIconEl.innerHTML=icons[iconMode]||'<i class="fa-regular fa-circle"></i>';
+}
+
+/* ══ AUDIO ══ */
+let currentAudio=null;
+const audioQueue=[];
+
+function playAudio(data,fmt){
+  if(currentAudio){currentAudio.pause();currentAudio=null;}
+  const mime=fmt==='mp3'?'audio/mpeg':'audio/wav';
+  const binStr=atob(data); const bytes=new Uint8Array(binStr.length);
+  for(let i=0;i<binStr.length;i++) bytes[i]=binStr.charCodeAt(i);
+  const blob=new Blob([bytes],{type:mime}); const url=URL.createObjectURL(blob);
+  const audio=new Audio(url); currentAudio=audio;
+  isSpeaking=true; setStatus('speaking'); micBtn.className='speaking';
+  audio.onended=audio.onerror=()=>{URL.revokeObjectURL(url);currentAudio=null;onSpeakEnd();};
+  audio.play().catch(()=>{URL.revokeObjectURL(url);onSpeakEnd();});
+}
+
+function _playNextChunk(){
+  if(currentAudio||audioQueue.length===0)return;
+  const {data,fmt}=audioQueue.shift();
+  const mime=fmt==='mp3'?'audio/mpeg':'audio/wav';
+  const binStr=atob(data); const bytes=new Uint8Array(binStr.length);
+  for(let i=0;i<binStr.length;i++) bytes[i]=binStr.charCodeAt(i);
+  const blob=new Blob([bytes],{type:mime}); const url=URL.createObjectURL(blob);
+  const audio=new Audio(url); currentAudio=audio;
+  isSpeaking=true; setStatus('speaking'); micBtn.className='speaking';
+  setLive('JARVIS speaking…','');
+  audio.onended=()=>{URL.revokeObjectURL(url);currentAudio=null;audioQueue.length>0?_playNextChunk():onSpeakEnd();};
+  audio.onerror=()=>{URL.revokeObjectURL(url);currentAudio=null;audioQueue.length=0;onSpeakEnd();};
+  audio.play().catch(()=>{URL.revokeObjectURL(url);currentAudio=null;audioQueue.length=0;onSpeakEnd();});
+}
+function playAudioData(data,fmt){audioQueue.push({data,fmt});_playNextChunk();}
+
+/* ══ BROWSER TTS ══ */
+function cleanForTTS(text){
+  text=text.replace(/```[\s\S]*?```/g,'code block');
+  text=text.replace(/\[([^\]]+)\]\([^)]+\)/g,'$1');
+  text=text.replace(/https?:\/\/\S+/g,'link');
+  text=text.replace(/^#{1,6}\s*/gm,'');
+  text=text.replace(/\*\*\*([^*]+)\*\*\*/g,'$1').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*\n]+)\*/g,'$1');
+  text=text.replace(/__([^_]+)__/g,'$1').replace(/_([^_\n]+)_/g,'$1');
+  text=text.replace(/`([^`]+)`/g,'$1');
+  text=text.replace(/^\s*[-*+]\s+/gm,'').replace(/^\s*\d+\.\s+/gm,'');
+  text=text.replace(/\|/g,' ').replace(/[#*_~`]/g,'');
+  text=text.replace(/\n{2,}/g,'. ').replace(/\n/g,' ').replace(/\s{2,}/g,' ');
+  return text.trim();
+}
+function _getVoice(){
+  const v=speechSynthesis.getVoices();
+  return v.find(x=>/david|james|george|daniel|oliver/i.test(x.name)&&x.lang.startsWith('en'))
+        ||v.find(x=>x.lang==='en-GB')||v.find(x=>x.lang.startsWith('en'))||null;
+}
+function speakBrowser(text){
+  text=cleanForTTS(text); if(!text)return;
+  speechSynthesis.cancel();
+  const sentences=text.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[text];
+  const queue=sentences.map(s=>s.trim()).filter(Boolean); if(!queue.length)return;
+  isSpeaking=true; setStatus('speaking'); micBtn.className='speaking';
+  const v=_getVoice();
+  function next(){
+    if(!isSpeaking||!queue.length){onSpeakEnd();return;}
+    const u=new SpeechSynthesisUtterance(queue.shift());
+    if(v)u.voice=v; u.rate=0.88; u.pitch=0.82;
+    u.onend=()=>queue.length?next():onSpeakEnd();
+    u.onerror=()=>{queue.length=0;onSpeakEnd();};
+    speechSynthesis.speak(u);
+  }
+  next();
+}
+speechSynthesis.addEventListener('voiceschanged',()=>{});
+
+function interruptJarvis(){
+  audioQueue.length=0;
+  if(currentAudio){currentAudio.pause();try{URL.revokeObjectURL(currentAudio.src);}catch{}currentAudio=null;}
+  speechSynthesis.cancel();
+  isSpeaking=false; resumeListening();
+}
+function onSpeakEnd(){
+  isSpeaking=false;
+  if(privateMode){applyPrivateMode(true);return;}
+  if(!userPaused)resumeListening();
+  else{setStatus('idle');micBtn.className='paused';micHint.textContent='PAUSED';setLive('Listening paused','');}
+}
+
+/* ══ VAD ══ */
+const VOICE_THRESHOLD=0.012, SILENCE_MS=1000, MIN_SPEECH_FRAMES=5;
+const BARGE_THRESHOLD=0.08, BARGE_FRAMES_REQ=8;
+
+const Recorder={
+  ctx:null,stream:null,processor:null,source:null,
+  chunks:[],active:false,SR:16000,bargeFrames:0,
+  speechDetected:false,silenceStart:null,speechFrames:0,
+  onSilence:null,onLevel:null,
+
+  async open(){
+    this.stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true}});
+    this.ctx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:this.SR});
+    this.source=this.ctx.createMediaStreamSource(this.stream);
+    this.processor=this.ctx.createScriptProcessor(4096,1,1);
+    this.source.connect(this.processor);this.processor.connect(this.ctx.destination);
+    this.processor.onaudioprocess=e=>this._process(e);
+  },
+  startRecording(){this.chunks=[];this.active=true;this.speechDetected=false;this.silenceStart=null;this.speechFrames=0;},
+  stopRecording(){this.active=false;return this._encode();},
+  close(){
+    this.active=false;
+    try{this.processor?.disconnect();this.source?.disconnect();}catch{}
+    this.stream?.getTracks().forEach(t=>t.stop());
+    this.ctx?.close().catch(()=>{});
+  },
+  _process(e){
+    const data=e.inputBuffer.getChannelData(0);
+    let sum=0;for(let i=0;i<data.length;i++)sum+=data[i]*data[i];
+    const rms=Math.sqrt(sum/data.length);
+    this.onLevel?.(rms);
+    if(isSpeaking){
+      if(rms>BARGE_THRESHOLD){this.bargeFrames++;if(this.bargeFrames>=BARGE_FRAMES_REQ){this.bargeFrames=0;interruptJarvis();}}
+      else this.bargeFrames=0;
+      return;
+    }
+    this.bargeFrames=0;
+    if(!this.active)return;
+    this.chunks.push(new Float32Array(data));
+    if(rms>VOICE_THRESHOLD){this.speechDetected=true;this.silenceStart=null;this.speechFrames++;}
+    else if(this.speechDetected){
+      if(!this.silenceStart)this.silenceStart=Date.now();
+      if(Date.now()-this.silenceStart>SILENCE_MS&&this.speechFrames>=MIN_SPEECH_FRAMES){this.active=false;this.onSilence?.();}
+    }
+  },
+  _encode(){
+    if(!this.chunks.length||!this.speechDetected)return null;
+    const total=this.chunks.reduce((s,c)=>s+c.length,0);
+    const pcm=new Int16Array(total);let off=0;
+    for(const ch of this.chunks)for(let i=0;i<ch.length;i++)pcm[off++]=Math.max(-32768,Math.min(32767,ch[i]*32768));
+    const buf=new ArrayBuffer(44+pcm.byteLength);const dv=new DataView(buf);
+    const ws=(o,s)=>[...s].forEach((c,i)=>dv.setUint8(o+i,c.charCodeAt(0)));
+    ws(0,'RIFF');dv.setUint32(4,36+pcm.byteLength,true);ws(8,'WAVE');ws(12,'fmt ');
+    dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,this.SR,true);
+    dv.setUint32(28,this.SR*2,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);
+    ws(36,'data');dv.setUint32(40,pcm.byteLength,true);
+    new Uint8Array(buf,44).set(new Uint8Array(pcm.buffer));
+    const bytes=new Uint8Array(buf);let b64='';const CH=8192;
+    for(let i=0;i<bytes.length;i+=CH)b64+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+CH,bytes.length)));
+    return btoa(b64);
+  }
+};
+
+Recorder.onLevel=rms=>{
+  const pct=Math.min(100,rms/0.08*100);
+  vadFill.style.width=pct+'%';
+  vadFill.style.background=rms>VOICE_THRESHOLD?'var(--green)':'var(--blue-dim)';
+};
+Recorder.onSilence=()=>{
+  const wav=Recorder.stopRecording();
+  if(!wav){resumeListening();return;}
+  setLive('Processing…','proc');setStatus('thinking');
+  micBtn.className='';micHint.textContent='THINKING';
+  if(wsReady)ws.send(JSON.stringify({type:'voice_audio',data:wav}));
+};
+
+let micOpen=false;
+async function openMic(){
+  if(micOpen)return;
+  try{await Recorder.open();micOpen=true;resumeListening();}
+  catch{addMsg('ERROR','Microphone access denied.','msg-tool');setLive('Mic denied','');}
+}
+function resumeListening(){
+  if(privateMode||userPaused||isSpeaking)return;
+  Recorder.startRecording();
+  setStatus('listening');setLive('Listening…','rec');
+  micBtn.className='idle';micHint.textContent='ALWAYS ON';
+  window._jarvisPulse=0;
+}
+function applyPrivateMode(on){
+  privateMode=on;
+  privBanner.className=on?'visible':'';
+  tbPrivate.className=on?'tb-btn on-red':'tb-btn';
+  if(on){Recorder.active=false;setStatus('private');setLive('Private mode','priv');micBtn.className='private';micHint.textContent='PRIVATE';window._jarvisPulse=0;}
+  else if(!userPaused)resumeListening();
+}
+micBtn.addEventListener('click',()=>{
+  if(privateMode){applyPrivateMode(false);if(wsReady)ws.send(JSON.stringify({type:'text',content:'Disable private mode.'}));return;}
+  userPaused=!userPaused;
+  if(userPaused){Recorder.active=false;setStatus('idle');setLive('Paused','');micBtn.className='paused';micHint.textContent='PAUSED';}
+  else resumeListening();
+});
+
+/* ══ WEBSOCKET ══ */
+let ws,wsReady=false;
+function connect(){
+  ws=new WebSocket(`ws://${location.host}/ws`);
+  ws.onopen=()=>{wsReady=true;addMsg('SYSTEM','Connected to JARVIS backend','msg-sys');setStatus('idle');openMic();};
+  ws.onclose=()=>{wsReady=false;setStatus('standby');addMsg('SYSTEM','Connection lost — retrying…','msg-sys');setTimeout(connect,2500);};
+  ws.onerror=()=>{};
+  ws.onmessage=e=>{
+    const msg=JSON.parse(e.data);
+    switch(msg.type){
+      case 'voice_mode':
+        backendTTS=msg.backend_tts;
+        const ttsLabel=backendTTS?'TTS: ELEVENLABS':'TTS: BROWSER';
+        ttsBadge.textContent=ttsLabel;
+        ttsBadge.className='panel-badge'+(backendTTS?' active':'');
+        document.getElementById('mp-tts-val').textContent=backendTTS?'ElevenLabs':'Browser';
+        break;
+      case 'status':
+        if(['idle','error','initializing','standby'].includes(msg.value))setStatus(msg.value);
+        break;
+      case 'stream_start': startStream();setStatus('thinking');break;
+      case 'token':        appendToken(msg.content);break;
+      case 'stream_end':
+        endStream();
+        if(!backendTTS)speakBrowser(fullReply);
+        break;
+      case 'audio':        playAudioData(msg.data,msg.fmt||'wav');break;
+      case 'tool_call':
+        addMsg(msg.name,'','msg-tool');
+        showToast(msg.name,'tool','Tool call');
+        break;
+      case 'transcript':   addMsg('YOU',msg.content,'msg-you');setLive('','');break;
+      case 'private_mode': applyPrivateMode(msg.enabled);break;
+      case 'alert':
+        addMsg('ALERT',msg.message,'msg-sys');
+        showToast(msg.message,'alert','Alert');
+        if(!backendTTS)speakBrowser(msg.message);
+        break;
+      case 'error':
+        addMsg('ERROR',msg.message,'msg-tool');
+        showToast(msg.message,'error','Error');
+        setStatus('idle');onSpeakEnd();break;
+    }
+  };
+}
+connect();
+
+/* ── Toolbar ── */
+document.getElementById('tb-mic').addEventListener('click',()=>micBtn.click());
+document.getElementById('tb-private').addEventListener('click',()=>{
+  if(privateMode){applyPrivateMode(false);if(wsReady)ws.send(JSON.stringify({type:'text',content:'Disable private mode.'}));}
+  else{applyPrivateMode(true);if(wsReady)ws.send(JSON.stringify({type:'text',content:'Enable private mode.'}));}
+});
+document.getElementById('tb-screen').addEventListener('click',()=>{
+  if(wsReady)ws.send(JSON.stringify({type:'text',content:'Read my screen and tell me what you see.'}));
+});
+
+addMsg('SYSTEM','Audio pipeline ready','msg-sys');
+addMsg('JARVIS','All systems online. Good day, sir Yaseen.','msg-jarvis');
+
+/* ══ TERMINAL DRAWER ══ */
+const termDrawer = document.getElementById('terminal-drawer');
+const termOutput = document.getElementById('term-output');
+const termInput  = document.getElementById('term-input');
+
+function termLog(text, cls='term-line-out'){
+  const d=document.createElement('div'); d.className=cls; d.textContent=text;
+  termOutput.appendChild(d); termOutput.scrollTop=termOutput.scrollHeight;
+}
+
+termInput.addEventListener('keydown', e=>{
+  if(e.key!=='Enter') return;
+  const cmd=termInput.value.trim(); if(!cmd) return;
+  termLog('PS> '+cmd,'term-line-cmd');
+  termInput.value='';
+  if(wsReady) ws.send(JSON.stringify({type:'text',content:'Run this PowerShell command and show me the exact output: '+cmd}));
+});
+
+document.getElementById('term-close').addEventListener('click',()=>{
+  termDrawer.classList.remove('open');
+  document.getElementById('tb-term').className='tb-btn';
+});
+
+document.getElementById('tb-term').addEventListener('click',()=>{
+  const open=termDrawer.classList.toggle('open');
+  document.getElementById('tb-term').className=open?'tb-btn on':'tb-btn';
+  if(open) setTimeout(()=>termInput.focus(),240);
+});
+
+/* ══ CAMERA ══ */
+document.getElementById('tb-cam').addEventListener('click',()=>{
+  if(!wsReady) return;
+  ws.send(JSON.stringify({type:'text',content:'Take a photo using the camera and describe in detail what you see.'}));
+  showToast('Capturing…','info','Camera');
+  const btn=document.getElementById('tb-cam');
+  btn.className='tb-btn on';
+  setTimeout(()=>btn.className='tb-btn',2000);
+});
+
+/* ══ APP LAUNCHER ══ */
+const appOverlay=document.getElementById('app-overlay');
+document.getElementById('tb-apps').addEventListener('click',()=>{
+  const open=appOverlay.classList.toggle('open');
+  document.getElementById('tb-apps').className=open?'tb-btn on':'tb-btn';
+});
+document.getElementById('app-close').addEventListener('click',()=>{
+  appOverlay.classList.remove('open');
+  document.getElementById('tb-apps').className='tb-btn';
+});
+document.querySelectorAll('.app-item').forEach(item=>{
+  item.addEventListener('click',()=>{
+    const label=item.dataset.label;
+    if(wsReady) ws.send(JSON.stringify({type:'text',content:'Open '+label}));
+    appOverlay.classList.remove('open');
+    document.getElementById('tb-apps').className='tb-btn';
+    showToast('Opening '+label,'info','App');
+  });
+});
+
+/* ══ CHAT PANEL TOGGLE ══ */
+document.getElementById('tb-chat').addEventListener('click',()=>{
+  const panel=document.querySelector('.chat-panel');
+  const hidden=panel.style.display==='none';
+  panel.style.display=hidden?'flex':'none';
+  document.getElementById('tb-chat').className=hidden?'tb-btn on':'tb-btn';
+});
+</script>
+
+
+</body>
+</html>

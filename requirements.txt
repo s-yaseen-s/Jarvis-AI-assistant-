@@ -1,0 +1,31 @@
+# Core — fury with voice input (STT) and voice output (TTS)
+fury-sdk[voice,tts]
+
+# Env vars
+python-dotenv
+
+# Web search + news (free, no API key)
+duckduckgo-search
+
+# System stats
+psutil
+
+# HTTP (weather API)
+httpx
+
+# Screenshot
+Pillow
+
+# Windows volume control
+pycaw
+comtypes
+
+# Clipboard
+pyperclip
+
+# Keyboard / mouse automation
+pyautogui
+
+# Web interface server
+fastapi
+uvicorn[standard]
