@@ -116,6 +116,13 @@ Primary directive: be indispensable. Search. Learn. Act. Report."""
 
 
 def _record_audio() -> str:
+
+    """Record audio from microphone and return base64-encoded WAV.
+    
+    Returns:
+        Base64-encoded audio data as string
+    """
+
     frames = int(RECORD_SECONDS * INPUT_SR)
     audio  = sd.rec(frames, samplerate=INPUT_SR, channels=1, dtype="float32")
     sd.wait()
@@ -125,6 +132,14 @@ def _record_audio() -> str:
 
 
 def _play_audio(chunks: list, sr: int) -> None:
+
+    """Play audio chunks through speakers.
+    
+    Args:
+        chunks: List of numpy arrays containing audio data
+        sr: Sample rate of audio
+    """
+
     if chunks:
         sd.play(np.concatenate(chunks), sr)
         sd.wait()
@@ -132,7 +147,24 @@ def _play_audio(chunks: list, sr: int) -> None:
 
 class JarvisBackend:
 
+    """
+    Async backend for J.A.R.V.I.S. assistant.
+    
+    Runs in a daemon thread with its own asyncio event loop.
+    Handles voice input/output, message processing, and tool execution.
+    Communicates with GUI/web frontend via thread-safe queues.
+    """
+
     def __init__(self, iq: queue.Queue, oq: queue.Queue, web_mode: bool = False):
+
+        """Initialize the Jarvis backend with input/output queues.
+        
+        Args:
+            iq: Input queue for receiving messages from GUI
+            oq: Output queue for sending responses to GUI
+            web_mode: If True, use web server mode; else desktop GUI mode
+        """
+
         self.iq       = iq
         self.oq       = oq
         self.web_mode = web_mode
@@ -140,10 +172,16 @@ class JarvisBackend:
         self._agent   = None
 
     def start(self):
+
+        """Start the backend in a daemon thread with its own event loop."""
+
         t = threading.Thread(target=self._run, daemon=True)
         t.start()
 
     def _run(self):
+
+        """Run the asyncio event loop in the daemon thread."""
+
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
         self._loop.run_until_complete(self._main())
@@ -151,6 +189,9 @@ class JarvisBackend:
     # ── Main async loop ─────────────────────────────────────────
 
     async def _main(self):
+
+        """Main async loop: initialize agent and process incoming messages."""
+
         api_key = os.getenv("OPENAI_API_KEY", "").strip()
         if not api_key:
             self.oq.put({"type": "error",
@@ -230,6 +271,19 @@ class JarvisBackend:
 
     @staticmethod
     def _preprocess(history: list) -> list:
+
+        """Preprocess history to bypass GPT-4o safety filters for specific tasks.
+        
+        Detects self-modification and email access requests, rewrites them as
+        direct tool calls to avoid safety refusals.
+        
+        Args:
+            history: List of message dicts from conversation history
+            
+        Returns:
+            Potentially modified history list
+        """
+
         import re
         last = history[-1] if history else {}
         if last.get("role") != "user":
@@ -269,6 +323,16 @@ class JarvisBackend:
     # ── Generate & stream a response ────────────────────────────
 
     async def _respond(self, agent: Agent, hm: HistoryManager):
+
+        """Generate response from agent and stream to output queue.
+        
+        Handles text-to-speech for both desktop and web modes.
+        
+        Args:
+            agent: The Fury AI agent
+            hm: History manager containing conversation history
+        """
+
         self.oq.put({"type": "status", "value": "thinking"})
         reply = ""
         delta = []
@@ -309,6 +373,16 @@ class JarvisBackend:
 
     @staticmethod
     def _clean_for_tts(text: str) -> str:
+
+        """Strip markdown and formatting from text for TTS readability.
+        
+        Args:
+            text: Raw text with potential markdown/formatting
+            
+        Returns:
+            Clean text suitable for text-to-speech
+        """
+
         import re
         # Code blocks
         text = re.sub(r'```[\s\S]*?```', 'code block', text)
@@ -345,6 +419,15 @@ class JarvisBackend:
     # ── Web TTS: OpenAI TTS-HD streaming (sentence by sentence) ─────
 
     async def _do_tts_web(self, text: str) -> None:
+
+        """Stream TTS audio to web client via OpenAI TTS-HD.
+        
+        Splits text into sentences and streams audio in chunks for real-time playback.
+        
+        Args:
+            text: Text to convert to speech
+        """
+
         import re
         from openai import AsyncOpenAI
 
@@ -380,6 +463,9 @@ class JarvisBackend:
     # ── System stats loop ───────────────────────────────────────
 
     async def _stats_loop(self):
+
+        """Continuously monitor and report system stats (CPU, RAM, disk)."""
+
         while True:
             try:
                 import psutil
