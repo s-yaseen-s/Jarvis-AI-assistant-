@@ -1156,10 +1156,15 @@ micBtn.addEventListener('click',()=>{
 
 /* ══ WEBSOCKET ══ */
 let ws,wsReady=false;
+// Token: read from ?token= URL param once, then persist in localStorage
+const _urlToken=new URLSearchParams(location.search).get('token');
+if(_urlToken)localStorage.setItem('jarvis_token',_urlToken);
+const _token=localStorage.getItem('jarvis_token')||'';
 function connect(){
-  ws=new WebSocket(`ws://${location.host}/ws`);
+  const _wsUrl=`ws://${location.host}/ws${_token?'?token='+encodeURIComponent(_token):''}`;
+  ws=new WebSocket(_wsUrl);
   ws.onopen=()=>{wsReady=true;addMsg('SYSTEM','Connected to JARVIS backend','msg-sys');setStatus('idle');openMic();};
-  ws.onclose=()=>{wsReady=false;setStatus('standby');addMsg('SYSTEM','Connection lost — retrying…','msg-sys');setTimeout(connect,2500);};
+  ws.onclose=(e)=>{wsReady=false;setStatus('standby');if(e.code===4001){addMsg('SYSTEM','Authentication failed — add ?token=YOUR_TOKEN to the URL.','msg-sys');return;}addMsg('SYSTEM','Connection lost — retrying…','msg-sys');setTimeout(connect,2500);};
   ws.onerror=()=>{};
   ws.onmessage=e=>{
     const msg=JSON.parse(e.data);
