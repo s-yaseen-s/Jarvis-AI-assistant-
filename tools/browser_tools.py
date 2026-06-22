@@ -1,4 +1,8 @@
-"""Browser navigation tools — opens URLs and searches directly in the default browser."""
+"""Browser navigation tools for J.A.R.V.I.S.
+
+Provides tools for opening URLs and performing searches directly in the
+default web browser. Handles URL validation and normalization.
+"""
 
 import urllib.parse
 import webbrowser
@@ -6,7 +10,26 @@ from fury import create_tool
 
 
 def open_url_tool():
+    """Create a tool for opening URLs in the default browser.
+    
+    Automatically handles URL normalization, scheme detection, and file paths.
+    Converts incomplete URLs to proper HTTP/HTTPS format.
+    
+    Returns:
+        Fury tool object for opening URLs
+    """
     def open_url(url: str):
+        """Open a URL or file path in the default browser.
+        
+        Automatically adds https:// if scheme is missing, converts file paths
+        to file:// URLs, and normalizes backslashes in file paths.
+        
+        Args:
+            url: URL or file path to open
+            
+        Returns:
+            Dict with success status and normalized URL
+        """
         url = url.strip()
         # Fix common LLM mistake: "file///" or "file//" without the colon
         if url.startswith("file///") or url.startswith("file//"):
@@ -46,7 +69,22 @@ def open_url_tool():
 
 
 def youtube_search_tool():
+    """Create a tool for searching YouTube in the browser.
+    
+    Opens YouTube search results page directly in default browser.
+    
+    Returns:
+        Fury tool object for YouTube search
+    """
     def youtube_search(query: str):
+        """Search YouTube and open results in the browser.
+        
+        Args:
+            query: Search term to look up on YouTube
+            
+        Returns:
+            Dict with success status, generated search URL, and query
+        """
         url = "https://www.youtube.com/results?search_query=" + urllib.parse.quote(query)
         webbrowser.open(url)
         return {"success": True, "url": url, "query": query}
@@ -71,7 +109,22 @@ def youtube_search_tool():
 
 
 def google_search_browser_tool():
+    """Create a tool for searching Google in the browser.
+    
+    Opens Google search results page with visual layout in default browser.
+    
+    Returns:
+        Fury tool object for Google browser search
+    """
     def google_search_browser(query: str):
+        """Open a Google search in the browser showing visual results page.
+        
+        Args:
+            query: Search query to open in Google
+            
+        Returns:
+            Dict with success status, generated search URL, and query
+        """
         url = "https://www.google.com/search?q=" + urllib.parse.quote(query)
         webbrowser.open(url)
         return {"success": True, "url": url, "query": query}

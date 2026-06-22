@@ -1,11 +1,36 @@
+"""Web access and information retrieval tools for J.A.R.V.I.S.
+
+Provides web search, page fetching, and weather lookup capabilities.
+Uses DuckDuckGo for search and wttr.in for weather data.
+"""
+
 import re
 import httpx
 from fury import create_tool
 
 
 def fetch_page_tool():
+    """Create a tool for fetching and parsing web page content.
+    
+    Strips HTML tags, scripts, styles, and cleans whitespace to extract
+    readable text content from any URL.
+    
+    Returns:
+        Fury tool object for fetching pages
+    """
     def fetch_page(url: str, max_chars: int = 8000):
-        """Fetch a URL and return its cleaned text content."""
+        """Fetch a URL and return its cleaned text content.
+        
+        Removes HTML markup, scripts, and unnecessary whitespace while
+        preserving readability. Content is truncated if it exceeds max_chars.
+        
+        Args:
+            url: Full URL to fetch
+            max_chars: Maximum characters to return (default: 8000)
+            
+        Returns:
+            Dict with success status, URL, cleaned content, and content length
+        """
         try:
             headers = {
                 "User-Agent": (
@@ -72,7 +97,24 @@ def fetch_page_tool():
 
 
 def web_search_tool():
+    """Create a tool for searching the web.
+    
+    Uses DuckDuckGo search engine via ddgs library.
+    Returns search results with titles, URLs, and snippets.
+    
+    Returns:
+        Fury tool object for web search
+    """
     def web_search(query: str, max_results: int = 5):
+        """Search the web for up-to-date information.
+        
+        Args:
+            query: Search query string
+            max_results: Number of results to return (default: 5)
+            
+        Returns:
+            Dict with search query and list of result dicts (title, url, snippet)
+        """
         try:
             try:
                 from ddgs import DDGS
@@ -114,7 +156,22 @@ def web_search_tool():
 
 
 def get_weather_tool():
+    """Create a tool for retrieving current weather information.
+    
+    Gets weather data from wttr.in API for any location worldwide.
+    
+    Returns:
+        Fury tool object for weather lookup
+    """
     def get_weather(location: str):
+        """Get current weather conditions for any city or location.
+        
+        Args:
+            location: City or location name (e.g., 'London', 'New York', 'Cairo')
+            
+        Returns:
+            Dict with location, temperature (C/F), feels-like, humidity, description, wind, visibility
+        """
         try:
             resp = httpx.get(f"https://wttr.in/{location}?format=j1", timeout=10)
             resp.raise_for_status()
