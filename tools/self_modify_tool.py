@@ -1,4 +1,8 @@
-"""Self-modification tool — lets JARVIS edit his own source files via a single tool call."""
+"""Self-modification tool for J.A.R.V.I.S.
+
+Allows J.A.R.V.I.S. to edit its own source files based on user requests.
+Uses GPT-4o-mini for intelligent code/config modifications with safety guards.
+"""
 
 import os
 import re
@@ -17,6 +21,16 @@ EDITABLE = {
 
 
 def _call_openai(content: str, instruction: str, api_key: str) -> str:
+    """Call GPT-4o-mini API to apply modifications to file content.
+    
+    Args:
+        content: Original file content
+        instruction: Plain-English instruction for modifications
+        api_key: OpenAI API key
+        
+    Returns:
+        Modified file content
+    """
     import httpx
     resp = httpx.post(
         "https://api.openai.com/v1/chat/completions",
@@ -48,7 +62,19 @@ def _call_openai(content: str, instruction: str, api_key: str) -> str:
 
 
 def _edit_backend(original: str, instruction: str, api_key: str) -> str:
-    """For backend.py: edit ONLY the SYSTEM_PROMPT string, never the Python code."""
+    """Safely edit backend.py by modifying ONLY the SYSTEM_PROMPT string.
+    
+    This protects critical Python code from accidental corruption.
+    Extracts the prompt, modifies it, and reinserts it into the file.
+    
+    Args:
+        original: Original backend.py content
+        instruction: Modification instruction
+        api_key: OpenAI API key
+        
+    Returns:
+        Modified backend.py content with updated SYSTEM_PROMPT
+    """
     m = re.search(r'(SYSTEM_PROMPT\s*=\s*"""\\\n)(.*?)(""")', original, re.DOTALL)
     if not m:
         raise ValueError("Could not locate SYSTEM_PROMPT in backend.py")
@@ -62,7 +88,28 @@ def _edit_backend(original: str, instruction: str, api_key: str) -> str:
 
 
 def self_modify_tool():
+    """Create a tool for J.A.R.V.I.S. to edit its own source code.
+    
+    Allows personality/behavior changes, rule updates, and code modifications
+    through natural language instructions. The server auto-reloads after changes.
+    
+    Returns:
+        Fury tool object for self-modification
+    """
     def apply_change(file: str, instruction: str):
+        """Edit one of J.A.R.V.I.S.'s own source files.
+        
+        Accepts plain-English instructions describing desired changes.
+        For backend.py, safely modifies only the SYSTEM_PROMPT.
+        For other files, applies changes to the entire content.
+        
+        Args:
+            file: Filename to edit (backend.py, index.html, web_server.py, etc.)
+            instruction: Plain-English description of what to change
+            
+        Returns:
+            Dict with success status, file path, instruction, and status note
+        """
         try:
             api_key = os.getenv("OPENAI_API_KEY", "")
             if not api_key:
@@ -101,8 +148,8 @@ def self_modify_tool():
     return create_tool(
         id="apply_code_change",
         description=(
-            "Edit one of JARVIS's own source files. "
-            "Use this whenever the user asks to change JARVIS's personality, behaviour, rules, or code. "
+            "Edit one of J.A.R.V.I.S.'s own source files. "
+            "Use this whenever the user asks to change J.A.R.V.I.S.'s personality, behaviour, rules, or code. "
             "Provide the filename and a plain-English instruction describing what to change. "
             "The server auto-reloads after the edit — no restart needed. "
             "Available files: backend.py (personality, system prompt, model settings), "
