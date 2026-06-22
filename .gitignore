@@ -30,11 +30,12 @@ id_rsa*
 # SENSITIVE: User Data & Memory
 # ─────────────────────────────────────────────────────────────────────────
 
-# Conversation history and memory
-.fury/memory/
-.fury/skills.json
-.fury/self_reflections.json
-.fury/notes.json
+# Conversation history, memory, and runtime data
+.fury/
+
+# Scheduled tasks + user preferences databases
+.tasks.db
+.memory.db
 
 # Cache files
 .cache/
