@@ -1,28 +1,267 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# J.A.R.V.I.S. Git Ignore File
+# Prevents sensitive files and build artifacts from being committed
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────────────────────
+# SENSITIVE: API Keys & Credentials
+# ─────────────────────────────────────────────────────────────────────────
+
+# Environment variables with API keys
 .env
 .env.local
-.fury/
-__pycache__/
-*.pyc
-*.pyo
-*.egg-info/
-dist/
-build/
-.venv/
-venv/
-resources/jarvis_ref.wav
+.env.*.local
 
-# Credentials and tokens (sensitive)
+# Google OAuth2 credentials
 credentials.json
 gmail_token.json
 token.json
+*.creds
 
-# IDE
+# AWS credentials
+~/.aws/
+
+# SSH keys
+*.pem
+*.key
+id_rsa*
+
+# ─────────────────────────────────────────────────────────────────────────
+# SENSITIVE: User Data & Memory
+# ─────────────────────────────────────────────────────────────────────────
+
+# Conversation history and memory
+.fury/memory/
+.fury/skills.json
+.fury/self_reflections.json
+.fury/notes.json
+
+# Cache files
+.cache/
+*.cache
+
+# ─────────────────────────────────────────────────────────────────────────
+# PYTHON: Virtual Environments & Dependencies
+# ─────────────────────────────────────────────────────────────────────────
+
+# Virtual environment directories
+venv/
+env/
+ENV/
+.venv
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Pip installed packages (use requirements.txt instead)
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Pipenv
+Pipfile.lock
+
+# Poetry
+poetry.lock
+
+# ─────────────────────────────────────────────────────────────────────────
+# PYTHON: IDE & Editor
+# ─────────────────────────────────────────────────────────────────────────
+
+# VS Code
 .vscode/
+*.code-workspace
+
+# PyCharm / JetBrains
 .idea/
+*.iml
+*.iws
+*.ipr
+.project
+.pydevproject
+.settings/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+.vim/
 *.swp
 *.swo
 *~
+.netrwhist
 
-# OS
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ─────────────────────────────────────────────────────────────────────────
+# AUDIO & MEDIA
+# ─────────────────────────────────────────────────────────────────────────
+
+# Recorded audio files (user privacy)
+*.wav
+*.mp3
+*.flac
+*.m4a
+
+# Screenshots (keep some, but not all)
+/screenshots/temp/
+/screenshots/*.tmp
+
+# Video files
+*.mp4
+*.avi
+*.mov
+
+# ─────────────────────────────────────────────────────────────────────────
+# LOGS & DEBUG OUTPUT
+# ─────────────────────────────────────────────────────────────────────────
+
+# Log files
+*.log
+logs/
+*.log.*
+
+# Debug files
+.debug/
+debug.txt
+
+# ─────────────────────────────────────────────────────────────────────────
+# OS-SPECIFIC
+# ─────────────────────────────────────────────────────────────────────────
+
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+
+# Windows
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+
+# ─────────────────────────────────────────────────────────────────────────
+# BUILD & DISTRIBUTION
+# ─────────────────────────────────────────────────────────────────────────
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Sphinx documentation
+docs/_build/
+
+# ─────────────────────────────────────────────────────────────────────────
+# TEMPORARY & BUILD FILES
+# ─────────────────────────────────────────────────────────────────────────
+
+# Compiled files
+*.pyc
+*.pyo
+
+# Temporary directories
+tmp/
+temp/
+*.tmp
+
+# OS lock files
+.lock
+*.lock
+
+# ─────────────────────────────────────────────────────────────────────────
+# DATABASE & STATE FILES
+# ─────────────────────────────────────────────────────────────────────────
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# State files
+*.state
+*.pkl
+*.pickle
+
+# ─────────────────────────────────────────────────────────────────────────
+# LOCAL DEVELOPMENT FILES
+# ─────────────────────────────────────────────────────────────────────────
+
+# Local development config
+local_settings.py
+.env.development.local
+
+# Test output
+test_results/
+test_output/
+
+# Jupyter notebooks (keep repo clean)
+.ipynb_checkpoints/
+*.ipynb
+
+# ─────────────────────────────────────────────────────────────────────────
+# EXCEPTIONS: DO COMMIT THESE
+# ─────────────────────────────────────────────────────────────────────────
+
+# Important configuration templates
+!.env.example
+!.gitignore
+!requirements.txt
+!setup.py
+
+# Documentation
+!README.md
+!docs/
+!CONTRIBUTING.md
+!LICENSE
+
+# Source code (obviously!)
+!*.py
+!*.html
+!*.css
+!*.js
+
+# ═══════════════════════════════════════════════════════════════════════════

@@ -1,31 +1,112 @@
-# Core — fury with voice input (STT) and voice output (TTS)
-fury-sdk[voice,tts]
+# J.A.R.V.I.S. Requirements
+# Install with: pip install -r requirements.txt
+# For development: pip install -r requirements.txt[dev] (if dev extras added)
 
-# Env vars
-python-dotenv
+# ═══════════════════════════════════════════════════════════════════════════
+# CORE AI FRAMEWORK
+# ═══════════════════════════════════════════════════════════════════════════
 
-# Web search + news (free, no API key)
-duckduckgo-search
+# Fury AI framework with voice support (STT & TTS)
+# Provides Agent, HistoryManager, MemoryStore for multi-turn conversations
+# Includes Whisper-based speech-to-text and neural text-to-speech
+fury-sdk[voice,tts]>=0.5.0
 
-# System stats
-psutil
+# ═══════════════════════════════════════════════════════════════════════════
+# SPEECH RECOGNITION & SYNTHESIS
+# ═══════════════════════════════════════════════════════════════════════════
 
-# HTTP (weather API)
-httpx
+# Faster Whisper: GPU-accelerated speech recognition (7-9x faster than base)
+# Requires CUDA for GPU support, falls back to CPU if unavailable
+faster-whisper>=0.9.0
 
-# Screenshot
-Pillow
+# OpenAI Python client for GPT-4o model access and TTS-HD
+openai>=1.3.0
 
-# Windows volume control
-pycaw
-comtypes
+# ═══════════════════════════════════════════════════════════════════════════
+# CONFIGURATION & ENVIRONMENT
+# ═══════════════════════════════════════════════════════════════════════════
 
-# Clipboard
-pyperclip
+# Load environment variables from .env file
+python-dotenv>=1.0.0
 
-# Keyboard / mouse automation
-pyautogui
+# ═══════════════════════════════════════════════════════════════════════════
+# WEB & INFORMATION RETRIEVAL
+# ═══════════════════════════════════════════════════════════════════════════
 
-# Web interface server
-fastapi
-uvicorn[standard]
+# DuckDuckGo search: free web search and news (no API key required)
+duckduckgo-search>=3.9.0
+
+# HTTP requests library (modern alternative to requests)
+httpx>=0.24.0
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GOOGLE API INTEGRATIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Google API libraries for Calendar and Gmail (OAuth2 authenticated)
+google-api-python-client>=2.100.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AUDIO PROCESSING
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Audio device interface (recording and playback)
+sounddevice>=0.4.6
+
+# Audio file I/O
+soundfile>=0.12.1
+
+# Numerical computing (audio processing)
+numpy>=1.24.0
+
+# ═══════════════════════════════════════════════════════════════════════════
+# WINDOWS SYSTEM INTEGRATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Windows volume control API
+pycaw>=20190726
+
+# Windows COM interface support (required by pycaw)
+comtypes>=1.2.0
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GUI & DESKTOP INTERFACE
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Image processing (screenshots)
+Pillow>=10.0.0
+
+# Keyboard and mouse automation
+pyautogui>=0.9.53
+
+# Clipboard operations
+pyperclip>=1.8.2
+
+# ═══════════════════════════════════════════════════════════════════════════
+# WEB SERVER & FASTAPI
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Modern Python web framework
+fastapi>=0.100.0
+
+# ASGI server for FastAPI
+uvicorn[standard]>=0.23.0
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SYSTEM MONITORING
+# ═══════════════════════════════════════════════════════════════════════════
+
+# CPU, memory, and disk usage statistics
+psutil>=5.9.0
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Optional: Development & Testing
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Uncomment below for development:
+# pytest>=7.4.0              # Unit testing framework
+# black>=23.0.0              # Code formatter
+# flake8>=6.0.0              # Linter
+# mypy>=1.4.0                # Type checker
