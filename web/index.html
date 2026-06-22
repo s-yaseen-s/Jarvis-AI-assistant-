@@ -543,6 +543,126 @@
     }
     #term-input::placeholder { color: var(--text2); }
 
+    /* ─────────────────── SETTINGS DRAWER ─────────────────── */
+    #settings-drawer {
+      position: fixed;
+      bottom: 48px; left: 0;
+      width: 360px;
+      height: 480px;
+      background: rgba(0,4,12,0.98);
+      border-top: 1px solid var(--border-hi);
+      border-right: 1px solid var(--border-hi);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-110%);
+      transition: transform 0.22s ease;
+      pointer-events: auto;
+      font-family: var(--font);
+    }
+    #settings-drawer.open { transform: translateX(0); }
+    .s-hd {
+      padding: 7px 14px;
+      font-size: 8px;
+      letter-spacing: 2px;
+      color: var(--text2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      background: rgba(0,8,20,0.6);
+    }
+    .s-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .s-tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--border);
+      color: var(--text2);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 8px;
+      letter-spacing: 2px;
+      padding: 6px 0;
+    }
+    .s-tab:last-child { border-right: none; }
+    .s-tab.active { color: var(--blue-hi); background: rgba(40,110,200,0.08); }
+    .s-body { flex:1; overflow-y:auto; padding: 10px 12px; }
+    .s-body::-webkit-scrollbar { width:2px; }
+    .s-body::-webkit-scrollbar-thumb { background:var(--blue-dim); }
+    .s-section { margin-bottom: 14px; }
+    .s-label { font-size:8px; letter-spacing:2px; color:var(--text2); margin-bottom:4px; }
+    .s-input {
+      width: 100%;
+      background: rgba(0,15,35,0.8);
+      border: 1px solid var(--border);
+      color: var(--text-hi);
+      font-family: var(--font);
+      font-size: 11px;
+      padding: 5px 8px;
+      border-radius: 2px;
+      outline: none;
+    }
+    .s-input:focus { border-color: var(--blue); }
+    .s-select {
+      width: 100%;
+      background: rgba(0,15,35,0.8);
+      border: 1px solid var(--border);
+      color: var(--text-hi);
+      font-family: var(--font);
+      font-size: 11px;
+      padding: 5px 8px;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    .s-select option { background: #000d1a; }
+    .s-radio-row { display:flex; gap:12px; flex-wrap:wrap; }
+    .s-radio { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--text); cursor:pointer; }
+    .s-radio input { accent-color: var(--blue-hi); }
+    .s-ft {
+      padding: 8px 12px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .s-save {
+      background: rgba(26,127,193,0.15);
+      border: 1px solid var(--blue);
+      color: var(--blue-hi);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 8px;
+      letter-spacing: 2px;
+      padding: 5px 14px;
+      border-radius: 2px;
+    }
+    .s-save:hover { background: rgba(26,127,193,0.3); }
+    .s-save-ok { font-size:9px; color:var(--green); opacity:0; transition:opacity 0.4s; }
+    .s-save-ok.show { opacity:1; }
+    .s-close { background:transparent; border:none; color:var(--text2); cursor:pointer; font-size:13px; padding:2px 4px; }
+    .s-close:hover { color:var(--red); }
+    /* stats tab */
+    .stat-tool-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+    .stat-tool-name { font-size:9px; color:var(--text); width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex-shrink:0; }
+    .stat-bar-wrap { flex:1; height:4px; background:var(--blue-dim); border-radius:2px; }
+    .stat-bar-fill { height:100%; background:var(--blue); border-radius:2px; transition:width 0.4s; }
+    .stat-count { font-size:9px; color:var(--text2); width:28px; text-align:right; flex-shrink:0; }
+    .stat-hour-grid { display:flex; align-items:flex-end; gap:2px; height:36px; margin-bottom:4px; }
+    .stat-hour-bar { flex:1; background:var(--blue-dim); border-radius:1px; min-height:2px; transition:height 0.3s; position:relative; }
+    .stat-hour-bar:hover::after { content:attr(data-tip); position:absolute; bottom:calc(100% + 3px); left:50%; transform:translateX(-50%); font-size:7px; background:rgba(0,8,20,0.95); color:var(--text-hi); padding:2px 5px; border-radius:2px; white-space:nowrap; pointer-events:none; }
+    .stat-summary { font-size:8px; color:var(--text2); margin-top:8px; line-height:1.8; }
+    .stat-clear { background:transparent; border:1px solid rgba(201,58,58,0.3); color:var(--red); cursor:pointer; font-size:8px; padding:3px 10px; border-radius:2px; letter-spacing:1px; font-family:var(--font); }
+    .stat-clear:hover { background:rgba(201,58,58,0.1); }
+
     /* ─────────────────── TASKS DRAWER ─────────────────── */
     #tasks-drawer {
       position: fixed;
@@ -863,6 +983,10 @@
       <i class="fa-solid fa-clock"></i>
       <span class="tb-label">Tasks</span>
     </button>
+    <button class="tb-btn" id="tb-settings">
+      <i class="fa-solid fa-gear"></i>
+      <span class="tb-label">Settings</span>
+    </button>
   </nav>
 
 </div>
@@ -880,6 +1004,83 @@
   <div class="term-input-row">
     <span class="term-prompt">PS&gt;</span>
     <input type="text" id="term-input" placeholder="Enter command and press Enter…" autocomplete="off" spellcheck="false">
+  </div>
+</div>
+
+<!-- Settings Drawer -->
+<div id="settings-drawer">
+  <div class="s-hd">
+    <span><i class="fa-solid fa-gear"></i>&nbsp;&nbsp;SETTINGS &amp; STATISTICS</span>
+    <button class="s-close" id="settings-close"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="s-tabs">
+    <button class="s-tab active" id="s-tab-prefs">PREFERENCES</button>
+    <button class="s-tab" id="s-tab-stats">STATISTICS</button>
+  </div>
+
+  <!-- Preferences pane -->
+  <div class="s-body" id="s-pane-prefs">
+    <div class="s-section">
+      <div class="s-label">TIMEZONE</div>
+      <input class="s-input" id="s-tz" type="text" placeholder="Africa/Cairo">
+    </div>
+    <div class="s-section">
+      <div class="s-label">LOCATION</div>
+      <input class="s-input" id="s-loc" type="text" placeholder="Cairo, Egypt">
+    </div>
+    <div class="s-section">
+      <div class="s-label">TTS VOICE &nbsp;<span style="color:var(--blue);font-size:8px">(takes effect immediately)</span></div>
+      <select class="s-select" id="s-voice">
+        <option value="onyx">onyx — deep male (JARVIS default)</option>
+        <option value="echo">echo — male</option>
+        <option value="fable">fable — expressive male</option>
+        <option value="alloy">alloy — neutral</option>
+        <option value="nova">nova — warm female</option>
+        <option value="shimmer">shimmer — bright female</option>
+      </select>
+    </div>
+    <div class="s-section">
+      <div class="s-label">RESPONSE STYLE &nbsp;<span style="color:var(--text2);font-size:8px">(on next restart)</span></div>
+      <div class="s-radio-row">
+        <label class="s-radio"><input type="radio" name="style" value="concise"> Concise</label>
+        <label class="s-radio"><input type="radio" name="style" value="detailed" checked> Detailed</label>
+        <label class="s-radio"><input type="radio" name="style" value="creative"> Creative</label>
+      </div>
+    </div>
+    <div class="s-section">
+      <div class="s-label">DO NOT DISTURB &nbsp;<span style="color:var(--text2);font-size:8px">leave blank to disable</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="s-input" id="s-dnd-s" type="text" placeholder="23:00" style="width:80px">
+        <span style="color:var(--text2);font-size:10px">to</span>
+        <input class="s-input" id="s-dnd-e" type="text" placeholder="07:00" style="width:80px">
+      </div>
+    </div>
+    <div class="s-section">
+      <div class="s-label">SHORTCUTS &nbsp;<span style="color:var(--text2);font-size:8px">JSON — e.g. {"W":"weather"}</span></div>
+      <input class="s-input" id="s-sc" type="text" placeholder='{"W":"What is the weather?"}'>
+    </div>
+  </div>
+
+  <!-- Statistics pane (hidden by default) -->
+  <div class="s-body" id="s-pane-stats" style="display:none">
+    <div class="s-section">
+      <div class="s-label">TOP TOOLS</div>
+      <div id="s-tools-list"><div style="color:var(--text2);font-size:9px">Loading…</div></div>
+    </div>
+    <div class="s-section">
+      <div class="s-label">ACTIVITY BY HOUR</div>
+      <div class="stat-hour-grid" id="s-hour-grid"></div>
+      <div style="display:flex;justify-content:space-between;font-size:7px;color:var(--text2)">
+        <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span>
+      </div>
+    </div>
+    <div class="stat-summary" id="s-summary"></div>
+  </div>
+
+  <div class="s-ft">
+    <button class="s-save" id="s-save-btn">SAVE PREFERENCES</button>
+    <span class="s-save-ok" id="s-save-ok">✓ Saved</span>
+    <button class="stat-clear" id="s-clear-stats" style="margin-left:auto;display:none">Clear Stats</button>
   </div>
 </div>
 
@@ -1449,6 +1650,113 @@ document.getElementById('tb-tasks').addEventListener('click',()=>{
   if(open)fetchTasks();
 });
 document.getElementById('tasks-refresh').addEventListener('click',fetchTasks);
+
+/* ══ SETTINGS DRAWER ══ */
+const settingsDrawer=document.getElementById('settings-drawer');
+let s_activeTab='prefs';
+
+// Tab switching
+document.getElementById('s-tab-prefs').addEventListener('click',()=>{
+  s_activeTab='prefs';
+  document.getElementById('s-tab-prefs').className='s-tab active';
+  document.getElementById('s-tab-stats').className='s-tab';
+  document.getElementById('s-pane-prefs').style.display='';
+  document.getElementById('s-pane-stats').style.display='none';
+  document.getElementById('s-save-btn').style.display='';
+  document.getElementById('s-clear-stats').style.display='none';
+});
+document.getElementById('s-tab-stats').addEventListener('click',()=>{
+  s_activeTab='stats';
+  document.getElementById('s-tab-prefs').className='s-tab';
+  document.getElementById('s-tab-stats').className='s-tab active';
+  document.getElementById('s-pane-prefs').style.display='none';
+  document.getElementById('s-pane-stats').style.display='';
+  document.getElementById('s-save-btn').style.display='none';
+  document.getElementById('s-clear-stats').style.display='';
+  fetchStats();
+});
+
+// Load preferences into form
+async function fetchPrefs(){
+  try{
+    const r=await fetch('/api/preferences');
+    const d=await r.json();
+    const p=d.prefs||{};
+    const v=k=>p[k]?p[k].value:'';
+    document.getElementById('s-tz').value=v('timezone')||'Africa/Cairo';
+    document.getElementById('s-loc').value=v('location')||'Cairo, Egypt';
+    document.getElementById('s-voice').value=v('tts_voice')||'onyx';
+    const style=v('response_style')||'detailed';
+    document.querySelectorAll('input[name="style"]').forEach(r=>r.checked=(r.value===style));
+    document.getElementById('s-dnd-s').value=v('dnd_start');
+    document.getElementById('s-dnd-e').value=v('dnd_end');
+    document.getElementById('s-sc').value=v('shortcuts')||'{}';
+  }catch(e){}
+}
+
+// Save preferences
+document.getElementById('s-save-btn').addEventListener('click',async()=>{
+  const style=document.querySelector('input[name="style"]:checked')?.value||'detailed';
+  const updates={
+    timezone:document.getElementById('s-tz').value.trim(),
+    location:document.getElementById('s-loc').value.trim(),
+    tts_voice:document.getElementById('s-voice').value,
+    response_style:style,
+    dnd_start:document.getElementById('s-dnd-s').value.trim(),
+    dnd_end:document.getElementById('s-dnd-e').value.trim(),
+    shortcuts:document.getElementById('s-sc').value.trim()||'{}',
+  };
+  try{
+    await fetch('/api/preferences',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(updates)});
+    const ok=document.getElementById('s-save-ok');
+    ok.className='s-save-ok show';
+    setTimeout(()=>ok.className='s-save-ok',2000);
+  }catch(e){}
+});
+
+// Load stats
+async function fetchStats(){
+  try{
+    const r=await fetch('/api/stats');
+    const d=await r.json();
+    // Tools
+    const tools=d.tools||[];
+    const maxCalls=tools.length?tools[0].calls:1;
+    document.getElementById('s-tools-list').innerHTML=tools.length?tools.map(t=>`
+      <div class="stat-tool-row">
+        <div class="stat-tool-name">${_esc(t.tool)}</div>
+        <div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:${Math.round(t.calls/maxCalls*100)}%"></div></div>
+        <div class="stat-count">${t.calls}</div>
+      </div>`).join(''):'<div style="color:var(--text2);font-size:9px">No data yet — start using JARVIS!</div>';
+    // Hourly heatmap
+    const hourly=d.hourly||[];
+    const maxH=Math.max(...hourly.map(h=>h.count),1);
+    document.getElementById('s-hour-grid').innerHTML=hourly.map(h=>`
+      <div class="stat-hour-bar" style="height:${Math.max(2,Math.round(h.count/maxH*34))}px;background:${h.count?'var(--blue)':'var(--blue-dim)'}"
+           data-tip="${h.hour.toString().padStart(2,'0')}:00 — ${h.count} msg"></div>`).join('');
+    // Summary
+    const s=d.summary||{};
+    document.getElementById('s-summary').innerHTML=
+      `Total messages: ${s.total_messages||0} &nbsp;|&nbsp; Tool calls: ${s.total_tool_calls||0} &nbsp;|&nbsp; DB: ${s.db_size_kb||0} KB &nbsp;|&nbsp; Retention: ${s.retention_days||90}d`;
+  }catch(e){}
+}
+
+// Clear stats
+document.getElementById('s-clear-stats').addEventListener('click',async()=>{
+  if(!confirm('Clear all interaction statistics? Preferences are kept.')) return;
+  try{await fetch('/api/stats',{method:'DELETE'});fetchStats();}catch(e){}
+});
+
+// Open/close
+document.getElementById('settings-close').addEventListener('click',()=>{
+  settingsDrawer.classList.remove('open');
+  document.getElementById('tb-settings').className='tb-btn';
+});
+document.getElementById('tb-settings').addEventListener('click',()=>{
+  const open=settingsDrawer.classList.toggle('open');
+  document.getElementById('tb-settings').className=open?'tb-btn on':'tb-btn';
+  if(open){ fetchPrefs(); if(s_activeTab==='stats') fetchStats(); }
+});
 </script>
 
 

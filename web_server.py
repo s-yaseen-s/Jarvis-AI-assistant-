@@ -28,6 +28,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from dotenv import load_dotenv
 from backend import JarvisBackend
 from task_scheduler import get_global_scheduler
+from memory_manager import MemoryManager, set_global_memory_manager, get_global_memory_manager
 
 load_dotenv()
 
@@ -60,7 +61,11 @@ async def _broadcast_loop() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Start shared backend and broadcast loop on server startup."""
+    """Start memory manager, shared backend, and broadcast loop on server startup."""
+    # Init memory manager first so backend can read preferences during agent init
+    mm = MemoryManager()
+    set_global_memory_manager(mm)
+
     _backend.start()
     task = asyncio.create_task(_broadcast_loop())
     yield
@@ -148,6 +153,56 @@ async def api_tasks_run_now(task_id: str):
         return JSONResponse({"ok": False, "error": "Scheduler not ready"}, status_code=503)
     ok = s.run_now(task_id)
     return JSONResponse({"ok": ok})
+
+
+# ── Preferences REST API ──────────────────────────────────────────────────────
+
+@app.get("/api/preferences")
+async def api_prefs_get():
+    """Return all user preferences as {key: {value, updated_at}}."""
+    mm = get_global_memory_manager()
+    if not mm:
+        return JSONResponse({"prefs": {}})
+    return JSONResponse({"prefs": mm.get_all_prefs()})
+
+
+@app.post("/api/preferences")
+async def api_prefs_set(request: Request):
+    """Bulk-update preferences. Body: {key: value, ...}."""
+    mm = get_global_memory_manager()
+    if not mm:
+        return JSONResponse({"ok": False, "error": "Memory manager not ready"}, status_code=503)
+    try:
+        updates = await request.json()
+        mm.set_prefs(updates)
+        return JSONResponse({"ok": True, "updated": list(updates.keys())})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
+
+
+# ── Statistics REST API ───────────────────────────────────────────────────────
+
+@app.get("/api/stats")
+async def api_stats_full():
+    """Tool usage stats, hourly activity, and storage summary."""
+    mm = get_global_memory_manager()
+    if not mm:
+        return JSONResponse({"tools": [], "hourly": [], "summary": {}})
+    return JSONResponse({
+        "tools":   mm.get_tool_stats(),
+        "hourly":  mm.get_hourly_activity(),
+        "summary": mm.get_summary(),
+    })
+
+
+@app.delete("/api/stats")
+async def api_stats_clear():
+    """Clear all interaction statistics (preserves preferences)."""
+    mm = get_global_memory_manager()
+    if not mm:
+        return JSONResponse({"ok": False, "error": "Memory manager not ready"}, status_code=503)
+    mm.clear_stats()
+    return JSONResponse({"ok": True})
 
 
 @app.get("/api/clients")

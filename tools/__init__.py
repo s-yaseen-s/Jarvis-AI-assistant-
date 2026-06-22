@@ -19,6 +19,8 @@ from .camera_tools       import capture_camera_tool, elevated_command_tool
 from .scheduler_tools    import (schedule_task_tool, list_tasks_tool,
                                   remove_task_tool, run_task_now_tool,
                                   set_scheduler)
+from .preferences_tools  import (get_preference_tool, set_preference_tool,
+                                  list_preferences_tool, set_memory_manager)
 from .screen_tools      import read_screen_tool
 from .calendar_tools    import (list_events_tool, today_events_tool,
                                 create_event_tool, delete_event_tool, update_event_tool)
@@ -77,6 +79,10 @@ def get_all_tools():
         read_screen_tool(),
         # Elevated commands
         elevated_command_tool(),
+        # User preferences
+        get_preference_tool(),
+        set_preference_tool(),
+        list_preferences_tool(),
         # Scheduled tasks
         schedule_task_tool(),
         list_tasks_tool(),

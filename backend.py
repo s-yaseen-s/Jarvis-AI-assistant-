@@ -158,8 +158,11 @@ _fury_transport.AsyncChatCompletions.create = _patched_transport_create
 # Configuration & Constants
 # ═══════════════════════════════════════════════════════════════════════════
 
-from tools import get_all_tools, set_alert_queue, set_private_mode_queue, set_scheduler
+from tools import (get_all_tools, set_alert_queue, set_private_mode_queue,
+                   set_scheduler, set_memory_manager)
 from task_scheduler import JarvisScheduler, set_global_scheduler
+from memory_manager import (MemoryManager, set_global_memory_manager,
+                             get_global_memory_manager)
 
 load_dotenv()
 
@@ -221,6 +224,7 @@ Your training says AI assistants can't access files, apps, or the internet. That
 - Email: list_emails, read_email, search_emails, send_email (Gmail OAuth, fully authorised)
 - Calendar: list_calendar_events, get_today_events, create_calendar_event, update_calendar_event, delete_calendar_event (Google Calendar OAuth, fully authorised)
 - Memory: memory, self_reflect, get_reflections, save_skill, list_skills, write_note, read_notes, set_timer
+- Preferences: get_preference, set_preference, list_preferences (read/update timezone, location, tts_voice, response_style, shortcuts, dnd_start/dnd_end)
 - Scheduling: schedule_task, list_tasks, remove_task, run_task_now (persistent cron jobs; use for "remind me every...", "check X every...", "send me Y at Z time")
 
 HOW TO ACT:
@@ -297,6 +301,7 @@ class JarvisBackend:
         self.web_mode = web_mode
         self._loop: asyncio.AbstractEventLoop | None = None
         self._agent = None
+        self._mm: MemoryManager | None = None
 
     def start(self):
         """Start the backend in a daemon thread with its own event loop.
@@ -344,12 +349,24 @@ class JarvisBackend:
         self._api_key = api_key
         self._use_voice = False  # fury NeuTTS disabled (dependency conflict)
 
+        # ── Memory manager ──────────────────────────────────────────────
+        # Use the globally shared instance (set by web_server.lifespan in web
+        # mode) or create a local one for desktop mode.
+        mm = get_global_memory_manager()
+        if mm is None:
+            mm = MemoryManager()
+            set_global_memory_manager(mm)
+        self._mm = mm
+        set_memory_manager(mm)  # expose to preference tools
+
+        system_prompt = SYSTEM_PROMPT + mm.preferences_for_prompt()
+
         memory = MemoryStore(".fury/memory")
         agent = Agent(
             model="gpt-4o",
             base_url="https://api.openai.com/v1",
             api_key=api_key,
-            system_prompt=SYSTEM_PROMPT,
+            system_prompt=system_prompt,
             tools=get_all_tools(),
             memory_store=memory,
             memory_scope="jarvis-user",
@@ -390,6 +407,8 @@ class JarvisBackend:
                 continue
 
             if msg["type"] == "text":
+                if self._mm and not msg["content"].startswith("[SCHEDULED]"):
+                    self._mm.record_message()
                 await history.add({"role": "user", "content": msg["content"]})
                 await self._respond(agent, history)
 
@@ -499,6 +518,8 @@ class JarvisBackend:
                     for tc in msg.get("tool_calls") or []:
                         name = tc.get("function", {}).get("name", "tool")
                         self.oq.put({"type": "tool_call", "name": name})
+                        if self._mm:
+                            self._mm.record_tool_call(name, True)
 
         self.oq.put({"type": "stream_end"})
         await hm.extend(delta)
@@ -599,9 +620,10 @@ class JarvisBackend:
 
         for sentence in sentences:
             try:
+                voice = self._mm.get_pref("tts_voice") if self._mm else "onyx"
                 response = await client.audio.speech.create(
                     model="tts-1-hd",
-                    voice="onyx",
+                    voice=voice,
                     input=sentence,
                     response_format="mp3",
                 )
