@@ -1,4 +1,8 @@
-"""Google Calendar tools — read, create, update, delete events."""
+"""Google Calendar tools for J.A.R.V.I.S.
+
+Provides full Google Calendar integration for reading, creating, updating,
+and deleting events. Requires OAuth2 credentials setup.
+"""
 
 import os
 from pathlib import Path
@@ -11,6 +15,14 @@ SCOPES      = ["https://www.googleapis.com/auth/calendar"]
 
 
 def _get_service():
+    """Get or create authenticated Google Calendar service.
+    
+    Handles OAuth2 authentication and token refresh.
+    Requires credentials.json in project root.
+    
+    Returns:
+        Google Calendar API service object
+    """
     from google.oauth2.credentials import Credentials
     from google.auth.transport.requests import Request
     from google_auth_oauthlib.flow import InstalledAppFlow
@@ -32,6 +44,14 @@ def _get_service():
 
 
 def _fmt_event(e: dict) -> dict:
+    """Format a raw Google Calendar event into readable format.
+    
+    Args:
+        e: Raw event dict from Google Calendar API
+        
+    Returns:
+        Formatted event dict with standard fields
+    """
     start = e.get("start", {})
     end   = e.get("end", {})
     return {
@@ -45,10 +65,24 @@ def _fmt_event(e: dict) -> dict:
     }
 
 
-# ── List upcoming events ─────────────────────────────────────────
+# ── List upcoming events ─────────────────────────────────────────────────────
 
 def list_events_tool():
+    """Create a tool for listing upcoming Google Calendar events.
+    
+    Returns:
+        Fury tool object for listing events
+    """
     def list_events(days: int = 7, max_results: int = 20):
+        """List upcoming Google Calendar events within a time range.
+        
+        Args:
+            days: How many days ahead to look (default: 7)
+            max_results: Maximum number of events to return (default: 20)
+            
+        Returns:
+            Dict with events list, count, and range in days
+        """
         try:
             svc  = _get_service()
             now  = datetime.now(timezone.utc)
@@ -89,10 +123,20 @@ def list_events_tool():
     )
 
 
-# ── Get today's events ───────────────────────────────────────────
+# ── Get today's events ───────────────────────────────────────────────────────
 
 def today_events_tool():
+    """Create a tool for getting today's Google Calendar events.
+    
+    Returns:
+        Fury tool object for getting today's events
+    """
     def get_today():
+        """Get all Google Calendar events for today.
+        
+        Returns:
+            Dict with events list, count, and date string
+        """
         try:
             svc   = _get_service()
             now   = datetime.now(timezone.utc)
@@ -127,14 +171,29 @@ def today_events_tool():
     )
 
 
-# ── Create event ─────────────────────────────────────────────────
+# ── Create event ─────────────────────────────────────────────────────────────
 
 def create_event_tool():
+    """Create a tool for adding new Google Calendar events.
+    
+    Returns:
+        Fury tool object for creating events
+    """
     def create_event(title: str, start: str, end: str,
                      description: str = "", location: str = ""):
-        """
-        start / end: ISO 8601 strings e.g. "2025-06-20T14:00:00"
-        or date-only "2025-06-20" for all-day events.
+        """Create a new Google Calendar event.
+        
+        Args:
+            title: Event title
+            start: Start datetime in ISO 8601 format:
+                   - Timed: "2025-06-20T14:00:00"
+                   - All-day: "2025-06-20"
+            end: End datetime in ISO 8601 format (same format as start)
+            description: Optional event description
+            location: Optional event location
+            
+        Returns:
+            Dict with success status, event ID, title, and calendar link
         """
         try:
             svc = _get_service()
@@ -191,10 +250,23 @@ def create_event_tool():
     )
 
 
-# ── Delete event ─────────────────────────────────────────────────
+# ── Delete event ─────────────────────────────────────────────────────────────
 
 def delete_event_tool():
+    """Create a tool for deleting Google Calendar events.
+    
+    Returns:
+        Fury tool object for deleting events
+    """
     def delete_event(event_id: str):
+        """Delete a Google Calendar event by its ID.
+        
+        Args:
+            event_id: The unique event ID to delete
+            
+        Returns:
+            Dict with success status and deleted event ID
+        """
         try:
             svc = _get_service()
             svc.events().delete(calendarId="primary", eventId=event_id).execute()
@@ -224,11 +296,29 @@ def delete_event_tool():
     )
 
 
-# ── Update event ─────────────────────────────────────────────────
+# ── Update event ─────────────────────────────────────────────────────────────
 
 def update_event_tool():
+    """Create a tool for updating Google Calendar events.
+    
+    Returns:
+        Fury tool object for updating events
+    """
     def update_event(event_id: str, title: str = "", start: str = "",
                      end: str = "", description: str = "", location: str = ""):
+        """Update an existing Google Calendar event.
+        
+        Args:
+            event_id: The unique event ID to update (required)
+            title: New event title (optional)
+            start: New start datetime in ISO 8601 format (optional)
+            end: New end datetime in ISO 8601 format (optional)
+            description: New event description (optional)
+            location: New event location (optional)
+            
+        Returns:
+            Dict with success status, updated event ID, and title
+        """
         try:
             svc   = _get_service()
             event = svc.events().get(calendarId="primary", eventId=event_id).execute()
