@@ -1,10 +1,24 @@
-"""Clipboard read/write tools."""
+"""Clipboard access tools for J.A.R.V.I.S.
+
+Provides tools for reading from and writing to the system clipboard.
+Uses pyperclip for cross-platform clipboard access.
+"""
 
 from fury import create_tool
 
 
 def get_clipboard_tool():
+    """Create a tool for reading clipboard contents.
+    
+    Returns:
+        Fury tool object for reading clipboard
+    """
     def get_clipboard():
+        """Read the current contents of the system clipboard.
+        
+        Returns:
+            Dict with clipboard content and text length
+        """
         try:
             import pyperclip
             text = pyperclip.paste()
@@ -29,7 +43,20 @@ def get_clipboard_tool():
 
 
 def set_clipboard_tool():
+    """Create a tool for writing to the clipboard.
+    
+    Returns:
+        Fury tool object for writing to clipboard
+    """
     def set_clipboard(text: str):
+        """Write text to the system clipboard.
+        
+        Args:
+            text: Text to copy to clipboard
+            
+        Returns:
+            Dict with success status and text length
+        """
         try:
             import pyperclip
             pyperclip.copy(text)

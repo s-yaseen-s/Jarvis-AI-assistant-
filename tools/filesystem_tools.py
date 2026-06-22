@@ -1,11 +1,15 @@
-"""File system tools — full read/write/list/delete access."""
+"""File system tools for J.A.R.V.I.S.
+
+Provides complete file system access including read, write, delete, move,
+and directory listing. Supports path aliases like 'desktop', 'documents', etc.
+"""
 
 import os
 import shutil
 from pathlib import Path
 from fury import create_tool
 
-MAX_READ_BYTES = 5_000_000  # 5 MB — no practical cap
+MAX_READ_BYTES = 5_000_000  # 5 MB
 
 # Common shorthand → real Windows path
 _FOLDER_ALIASES = {
@@ -16,8 +20,19 @@ _FOLDER_ALIASES = {
     "home":      os.path.expanduser("~"),
 }
 
+
 def _resolve(path: str) -> Path:
-    """Expand env-vars, ~, and common shorthand names."""
+    """Expand environment variables, ~, and common folder aliases to real paths.
+    
+    Supports shortcuts like 'desktop', 'documents', 'downloads', 'pictures', 'home'.
+    Also expands Windows environment variables like %USERPROFILE%.
+    
+    Args:
+        path: File or folder path with possible aliases or env vars
+        
+    Returns:
+        Resolved absolute Path object
+    """
     path = os.path.expandvars(path)          # %USERPROFILE%, $env:... etc.
     lower = path.strip().lower().lstrip("/\\")
     for alias, real in _FOLDER_ALIASES.items():
@@ -28,7 +43,20 @@ def _resolve(path: str) -> Path:
 
 
 def list_directory_tool():
+    """Create a tool for listing directory contents.
+    
+    Returns:
+        Fury tool object for listing directories
+    """
     def list_directory(path: str = "."):
+        """List files and folders at a given path.
+        
+        Args:
+            path: Directory path to list (default: current directory)
+            
+        Returns:
+            Dict with directory path, list of entries (name, type, size), and count
+        """
         try:
             p = _resolve(path)
             entries = []
@@ -66,7 +94,21 @@ def list_directory_tool():
 
 
 def read_file_tool():
+    """Create a tool for reading file contents.
+    
+    Returns:
+        Fury tool object for reading files
+    """
     def read_file(path: str, encoding: str = "utf-8"):
+        """Read the contents of any text file.
+        
+        Args:
+            path: File path to read
+            encoding: Text encoding (default: utf-8)
+            
+        Returns:
+            Dict with file path, content, truncation status, and total size
+        """
         try:
             p = _resolve(path)
             size = p.stat().st_size
@@ -111,7 +153,26 @@ def read_file_tool():
 
 
 def write_file_tool():
+    """Create a tool for writing to files.
+    
+    Creates parent directories as needed. Supports both overwrite and append modes.
+    
+    Returns:
+        Fury tool object for writing files
+    """
     def write_file(path: str, content: str, mode: str = "overwrite"):
+        """Write or append text content to any file.
+        
+        Creates parent directories automatically if they don't exist.
+        
+        Args:
+            path: File path to write to
+            content: Text content to write
+            mode: 'overwrite' (default) or 'append'
+            
+        Returns:
+            Dict with success status, file path, and bytes written
+        """
         import subprocess, tempfile
 
         # Strategy 1: direct Python write with smart path resolution
@@ -181,7 +242,20 @@ def write_file_tool():
 
 
 def delete_file_tool():
+    """Create a tool for deleting files and directories.
+    
+    Returns:
+        Fury tool object for deleting files/directories
+    """
     def delete_file(path: str):
+        """Delete a file or directory (recursive for directories).
+        
+        Args:
+            path: Path to file or directory to delete
+            
+        Returns:
+            Dict with success status, path, and type (file or directory)
+        """
         try:
             p = _resolve(path)
             if p.is_dir():
@@ -217,7 +291,21 @@ def delete_file_tool():
 
 
 def move_file_tool():
+    """Create a tool for moving and renaming files.
+    
+    Returns:
+        Fury tool object for moving files
+    """
     def move_file(source: str, destination: str):
+        """Move or rename a file or directory.
+        
+        Args:
+            source: Source file or directory path
+            destination: Destination path
+            
+        Returns:
+            Dict with success status, source path, and destination path
+        """
         try:
             src = _resolve(source)
             dst = _resolve(destination)
